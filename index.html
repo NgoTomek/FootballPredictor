@@ -91,6 +91,23 @@
             width: 3rem;
             height: 3rem;
         }
+        /* Auth Styles */
+        .auth-tabs .nav-link {
+            color: #495057;
+        }
+        .auth-tabs .nav-link.active {
+            color: #0d6efd;
+            font-weight: bold;
+            border-color: #dee2e6 #dee2e6 #fff;
+            border-bottom: 2px solid #0d6efd;
+        }
+        .auth-status {
+            padding: 10px 15px;
+            border-radius: 5px;
+            margin-bottom: 15px;
+            background-color: #e9ecef;
+            border: 1px solid #ced4da;
+        }
         @media (max-width: 768px) {
             .team-logo {
                 width: 60px;
@@ -127,12 +144,109 @@
                     <li class="nav-item">
                         <a class="nav-link" href="#about">About</a>
                     </li>
+                    <!-- Auth Nav Items -->
+                    <li class="nav-item" id="loginNavItem">
+                        <a class="nav-link" href="#" data-bs-toggle="modal" data-bs-target="#authModal">
+                            <i class="bi bi-box-arrow-in-right"></i> Login / Sign Up
+                        </a>
+                    </li>
+                    <li class="nav-item dropdown" id="userNavItem" style="display: none;">
+                        <a class="nav-link dropdown-toggle" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="bi bi-person-circle"></i> <span id="userEmail">User</span>
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
+                            <li><a class="dropdown-item" href="#" id="logoutBtn"><i class="bi bi-box-arrow-right"></i> Logout</a></li>
+                        </ul>
+                    </li>
                 </ul>
             </div>
         </div>
     </nav>
 
+    <!-- Authentication Modal -->
+    <div class="modal fade" id="authModal" tabindex="-1" aria-labelledby="authModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="authModalLabel">Account Access</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div id="authAlert" class="alert" style="display: none;" role="alert"></div>
+                    
+                    <ul class="nav nav-tabs auth-tabs mb-3" id="authTabs" role="tablist">
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link active" id="login-tab" data-bs-toggle="tab" data-bs-target="#login-tab-pane" type="button" role="tab" aria-controls="login-tab-pane" aria-selected="true">Login</button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="signup-tab" data-bs-toggle="tab" data-bs-target="#signup-tab-pane" type="button" role="tab" aria-controls="signup-tab-pane" aria-selected="false">Sign Up</button>
+                        </li>
+                    </ul>
+                    
+                    <div class="tab-content" id="authTabsContent">
+                        <!-- Login Form -->
+                        <div class="tab-pane fade show active" id="login-tab-pane" role="tabpanel" aria-labelledby="login-tab" tabindex="0">
+                            <form id="loginForm">
+                                <div class="mb-3">
+                                    <label for="loginEmail" class="form-label">Email address</label>
+                                    <input type="email" class="form-control" id="loginEmail" required>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="loginPassword" class="form-label">Password</label>
+                                    <input type="password" class="form-control" id="loginPassword" required>
+                                </div>
+                                <div class="d-grid">
+                                    <button type="submit" class="btn btn-primary">
+                                        <i class="bi bi-box-arrow-in-right"></i> Login
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                        
+                        <!-- Sign Up Form -->
+                        <div class="tab-pane fade" id="signup-tab-pane" role="tabpanel" aria-labelledby="signup-tab" tabindex="0">
+                            <form id="signupForm">
+                                <div class="mb-3">
+                                    <label for="signupEmail" class="form-label">Email address</label>
+                                    <input type="email" class="form-control" id="signupEmail" required>
+                                    <div class="form-text">We'll never share your email with anyone else.</div>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="signupPassword" class="form-label">Password</label>
+                                    <input type="password" class="form-control" id="signupPassword" required>
+                                    <div class="form-text">Password must be at least 6 characters.</div>
+                                </div>
+                                <div class="d-grid">
+                                    <button type="submit" class="btn btn-success">
+                                        <i class="bi bi-person-plus"></i> Create Account
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <div class="container">
+        <!-- Auth Status (for logged in users) -->
+        <div id="authStatusContainer" style="display: none;">
+            <div class="row mb-4">
+                <div class="col-md-12">
+                    <div class="auth-status">
+                        <div class="d-flex align-items-center">
+                            <i class="bi bi-person-check fs-4 me-2"></i>
+                            <div>
+                                <strong>Logged in as: </strong><span id="statusUserEmail"></span>
+                                <div class="small text-muted">You can now access all features.</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <div class="row mb-4">
             <div class="col-md-12">
                 <div class="card">
@@ -236,120 +350,7 @@
         </div>
 
         <div id="predictionResultContainer" style="display: none;">
-            <div class="row mb-4">
-                <div class="col-md-12">
-                    <div class="card">
-                        <div class="card-header bg-primary text-white">
-                            <h3><i class="bi bi-graph-up"></i> Match Prediction</h3>
-                        </div>
-                        <div class="card-body">
-                            <div class="row align-items-center mb-4">
-                                <div class="col-md-5 text-center">
-                                    <img id="homeTeamLogo" src="" alt="Home Team" class="team-logo mb-2">
-                                    <h4 id="homeTeamName">Home Team</h4>
-                                </div>
-                                <div class="col-md-2 text-center">
-                                    <div class="vs-badge">VS</div>
-                                </div>
-                                <div class="col-md-5 text-center">
-                                    <img id="awayTeamLogo" src="" alt="Away Team" class="team-logo mb-2">
-                                    <h4 id="awayTeamName">Away Team</h4>
-                                </div>
-                            </div>
-
-                            <div class="row">
-                                <div class="col-md-6">
-                                    <div class="card prediction-card mb-3">
-                                        <div class="card-body">
-                                            <h5 class="card-title">Prediction Result</h5>
-                                            <div class="alert alert-primary" id="predictionResult">
-                                                Home Win (65%)
-                                            </div>
-                                            <h6>Outcome Probabilities</h6>
-                                            <div class="mb-2">
-                                                <div class="d-flex justify-content-between">
-                                                    <span>Home Win</span>
-                                                    <span id="homeWinProb">65%</span>
-                                                </div>
-                                                <div class="progress">
-                                                    <div id="homeWinProgress" class="progress-bar progress-bar-home" role="progressbar" style="width: 65%"></div>
-                                                </div>
-                                            </div>
-                                            <div class="mb-2">
-                                                <div class="d-flex justify-content-between">
-                                                    <span>Draw</span>
-                                                    <span id="drawProb">20%</span>
-                                                </div>
-                                                <div class="progress">
-                                                    <div id="drawProgress" class="progress-bar progress-bar-draw" role="progressbar" style="width: 20%"></div>
-                                                </div>
-                                            </div>
-                                            <div class="mb-2">
-                                                <div class="d-flex justify-content-between">
-                                                    <span>Away Win</span>
-                                                    <span id="awayWinProb">15%</span>
-                                                </div>
-                                                <div class="progress">
-                                                    <div id="awayWinProgress" class="progress-bar progress-bar-away" role="progressbar" style="width: 15%"></div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="col-md-6">
-                                    <div class="card tactical-card">
-                                        <div class="card-body">
-                                            <h5 class="card-title">Key Tactical Insights</h5>
-                                            <div id="tacticalInsights">
-                                                <div class="mb-3">
-                                                    <div class="d-flex justify-content-between">
-                                                        <span>Pressing Mismatch</span>
-                                                        <span id="pressingMismatchValue">+0.45</span>
-                                                    </div>
-                                                    <div class="progress feature-importance">
-                                                        <div id="pressingMismatchBar" class="progress-bar feature-bar" role="progressbar" style="width: 45%"></div>
-                                                    </div>
-                                                </div>
-                                                <div class="mb-3">
-                                                    <div class="d-flex justify-content-between">
-                                                        <span>Possession vs Defense</span>
-                                                        <span id="possessionDefenseValue">+0.32</span>
-                                                    </div>
-                                                    <div class="progress feature-importance">
-                                                        <div id="possessionDefenseBar" class="progress-bar feature-bar" role="progressbar" style="width: 32%"></div>
-                                                    </div>
-                                                </div>
-                                                <div class="mb-3">
-                                                    <div class="d-flex justify-content-between">
-                                                        <span>Counter vs Defense</span>
-                                                        <span id="counterDefenseValue">-0.18</span>
-                                                    </div>
-                                                    <div class="progress feature-importance">
-                                                        <div id="counterDefenseBar" class="progress-bar feature-bar" role="progressbar" style="width: 18%"></div>
-                                                    </div>
-                                                </div>
-                                                <div class="mb-3">
-                                                    <div class="d-flex justify-content-between">
-                                                        <span>Wing Width Mismatch</span>
-                                                        <span id="wingWidthValue">+0.27</span>
-                                                    </div>
-                                                    <div class="progress feature-importance">
-                                                        <div id="wingWidthBar" class="progress-bar feature-bar" role="progressbar" style="width: 27%"></div>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                            <div class="alert alert-warning mt-3">
-                                                <i class="bi bi-info-circle"></i> 
-                                                <span id="tacticalSummary">Home team has a significant pressing advantage which could disrupt away team's build-up play.</span>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
+            <!-- Prediction results will be loaded here -->
         </div>
 
         <div class="row mb-4" id="about">
@@ -359,43 +360,20 @@
                         <h3><i class="bi bi-info-circle"></i> About the Model</h3>
                     </div>
                     <div class="card-body">
-                        <div class="row">
-                            <div class="col-md-6">
-                                <h5>How It Works</h5>
-                                <p>
-                                    Our prediction model combines manager tactical styles with team performance metrics to predict match outcomes.
-                                    The model analyzes tactical mismatches between managers and identifies advantages in specific areas of play.
-                                </p>
-                                <p>
-                                    Key features used in prediction:
-                                </p>
-                                <ul>
-                                    <li><strong>Tactical Features:</strong> Pressing intensity, possession control, counter-attack focus, etc.</li>
-                                    <li><strong>Squad Features:</strong> Elo ratings, goal difference, points per game</li>
-                                    <li><strong>Tactical Mismatches:</strong> Specific advantages in pressing, possession, counter-attacks</li>
-                                </ul>
-                            </div>
-                            <div class="col-md-6">
-                                <h5>Model Performance</h5>
-                                <p>
-                                    The model was trained on data from the top 5 European leagues using a temporal split approach,
-                                    with earlier matches used for training and later matches for testing.
-                                </p>
-                                <p>
-                                    <strong>Accuracy:</strong> 54.78% (CatBoost model)
-                                </p>
-                                <p>
-                                    <strong>Feature Importance:</strong>
-                                </p>
-                                <ul>
-                                    <li>Squad strength features: 52%</li>
-                                    <li>Tactical features: 48%</li>
-                                </ul>
-                                <p>
-                                    The model performs best at predicting home wins, followed by away wins, with draws being the most difficult to predict.
-                                </p>
-                            </div>
-                        </div>
+                        <p>
+                            Our football match prediction model combines manager tactical styles with team performance metrics to provide accurate predictions.
+                            The model analyzes the tactical approaches of both managers and identifies potential mismatches that could influence the match outcome.
+                        </p>
+                        <h5>Key Features:</h5>
+                        <ul>
+                            <li><strong>Manager Tactical Vectors:</strong> Each manager's style is represented as a vector across multiple tactical dimensions.</li>
+                            <li><strong>Tactical Mismatches:</strong> The model identifies specific tactical advantages one team might have over another.</li>
+                            <li><strong>Team Strength Metrics:</strong> Traditional performance indicators like Elo ratings and goal statistics are incorporated.</li>
+                            <li><strong>Machine Learning:</strong> Advanced algorithms combine all factors to generate accurate probability distributions.</li>
+                        </ul>
+                        <p>
+                            <strong>Note:</strong> This model is for informational purposes only. Please gamble responsibly.
+                        </p>
                     </div>
                 </div>
             </div>
@@ -407,17 +385,10 @@
             <div class="row">
                 <div class="col-md-6">
                     <h5>Football Match Predictor</h5>
-                    <p>
-                        A data-driven approach to predicting football match outcomes by combining manager tactical styles with team strength metrics.
-                    </p>
+                    <p>Predict football match outcomes based on manager tactical styles and team performance metrics.</p>
                 </div>
                 <div class="col-md-6 text-md-end">
-                    <p>
-                        Data provided by API-Football
-                    </p>
-                    <p>
-                        &copy; 2025 Football Match Predictor
-                    </p>
+                    <p>&copy; 2025 Football Match Predictor</p>
                 </div>
             </div>
         </div>
