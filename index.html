@@ -1,0 +1,430 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Football Match Predictor</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+    <style>
+        body {
+            background-color: #f8f9fa;
+            font-family: 'Roboto', sans-serif;
+        }
+        .navbar {
+            background-color: #0d6efd;
+        }
+        .navbar-brand {
+            font-weight: bold;
+            color: white !important;
+        }
+        .card {
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+            transition: transform 0.3s;
+        }
+        .card:hover {
+            transform: translateY(-5px);
+        }
+        .team-logo {
+            width: 80px;
+            height: 80px;
+            object-fit: contain;
+            margin: 0 auto;
+        }
+        .vs-badge {
+            background-color: #f8f9fa;
+            color: #0d6efd;
+            font-weight: bold;
+            font-size: 24px;
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        .prediction-card {
+            background-color: #f1f8ff;
+            border-left: 5px solid #0d6efd;
+        }
+        .tactical-card {
+            background-color: #fff8f1;
+            border-left: 5px solid #fd7e14;
+        }
+        .progress {
+            height: 25px;
+            margin-bottom: 10px;
+        }
+        .progress-bar-home {
+            background-color: #0d6efd;
+        }
+        .progress-bar-draw {
+            background-color: #6c757d;
+        }
+        .progress-bar-away {
+            background-color: #dc3545;
+        }
+        .feature-importance {
+            height: 15px;
+            margin-bottom: 5px;
+        }
+        .feature-bar {
+            background-color: #20c997;
+        }
+        .footer {
+            background-color: #343a40;
+            color: white;
+            padding: 20px 0;
+            margin-top: 50px;
+        }
+        .loading {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 200px;
+        }
+        .spinner-border {
+            width: 3rem;
+            height: 3rem;
+        }
+        @media (max-width: 768px) {
+            .team-logo {
+                width: 60px;
+                height: 60px;
+            }
+            .vs-badge {
+                width: 40px;
+                height: 40px;
+                font-size: 18px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark mb-4">
+        <div class="container">
+            <a class="navbar-brand" href="#">
+                <i class="bi bi-graph-up"></i> Football Match Predictor
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a class="nav-link active" href="#">Home</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#upcoming">Upcoming Matches</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#custom">Custom Prediction</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#about">About</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container">
+        <div class="row mb-4">
+            <div class="col-md-12">
+                <div class="card">
+                    <div class="card-body">
+                        <h2 class="card-title text-center mb-4">
+                            <i class="bi bi-lightning-charge"></i> Football Match Prediction
+                        </h2>
+                        <p class="card-text text-center">
+                            Predict football match outcomes based on manager tactical styles and team performance metrics.
+                            Our model analyzes tactical mismatches between managers and combines them with team strength indicators
+                            to provide accurate predictions for upcoming matches.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row mb-4" id="upcoming">
+            <div class="col-md-12">
+                <div class="card">
+                    <div class="card-header bg-primary text-white">
+                        <h3><i class="bi bi-calendar-event"></i> Upcoming Matches</h3>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-4 mb-3">
+                                <select class="form-select" id="leagueSelect">
+                                    <option value="all">All Leagues</option>
+                                    <option value="39">Premier League</option>
+                                    <option value="140">La Liga</option>
+                                    <option value="135">Serie A</option>
+                                    <option value="78">Bundesliga</option>
+                                    <option value="61">Ligue 1</option>
+                                </select>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <select class="form-select" id="dateRangeSelect">
+                                    <option value="7">Next 7 days</option>
+                                    <option value="14">Next 14 days</option>
+                                    <option value="30">Next 30 days</option>
+                                </select>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <button class="btn btn-primary w-100" id="loadMatchesBtn">
+                                    <i class="bi bi-search"></i> Load Matches
+                                </button>
+                            </div>
+                        </div>
+
+                        <div id="upcomingMatchesContainer">
+                            <div class="loading">
+                                <div class="spinner-border text-primary" role="status">
+                                    <span class="visually-hidden">Loading...</span>
+                                </div>
+                            </div>
+                            <!-- Upcoming matches will be loaded here -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row mb-4" id="custom">
+            <div class="col-md-12">
+                <div class="card">
+                    <div class="card-header bg-success text-white">
+                        <h3><i class="bi bi-gear"></i> Custom Match Prediction</h3>
+                    </div>
+                    <div class="card-body">
+                        <form id="customPredictionForm">
+                            <div class="row mb-4">
+                                <div class="col-md-5">
+                                    <label class="form-label">Home Team</label>
+                                    <select class="form-select" id="homeTeamSelect" required>
+                                        <option value="">Select Home Team</option>
+                                        <!-- Teams will be loaded here -->
+                                    </select>
+                                </div>
+                                <div class="col-md-2 d-flex align-items-center justify-content-center">
+                                    <div class="vs-badge">VS</div>
+                                </div>
+                                <div class="col-md-5">
+                                    <label class="form-label">Away Team</label>
+                                    <select class="form-select" id="awayTeamSelect" required>
+                                        <option value="">Select Away Team</option>
+                                        <!-- Teams will be loaded here -->
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-12 text-center">
+                                    <button type="submit" class="btn btn-success btn-lg">
+                                        <i class="bi bi-graph-up"></i> Predict Match Outcome
+                                    </button>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="predictionResultContainer" style="display: none;">
+            <div class="row mb-4">
+                <div class="col-md-12">
+                    <div class="card">
+                        <div class="card-header bg-primary text-white">
+                            <h3><i class="bi bi-graph-up"></i> Match Prediction</h3>
+                        </div>
+                        <div class="card-body">
+                            <div class="row align-items-center mb-4">
+                                <div class="col-md-5 text-center">
+                                    <img id="homeTeamLogo" src="" alt="Home Team" class="team-logo mb-2">
+                                    <h4 id="homeTeamName">Home Team</h4>
+                                </div>
+                                <div class="col-md-2 text-center">
+                                    <div class="vs-badge">VS</div>
+                                </div>
+                                <div class="col-md-5 text-center">
+                                    <img id="awayTeamLogo" src="" alt="Away Team" class="team-logo mb-2">
+                                    <h4 id="awayTeamName">Away Team</h4>
+                                </div>
+                            </div>
+
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="card prediction-card mb-3">
+                                        <div class="card-body">
+                                            <h5 class="card-title">Prediction Result</h5>
+                                            <div class="alert alert-primary" id="predictionResult">
+                                                Home Win (65%)
+                                            </div>
+                                            <h6>Outcome Probabilities</h6>
+                                            <div class="mb-2">
+                                                <div class="d-flex justify-content-between">
+                                                    <span>Home Win</span>
+                                                    <span id="homeWinProb">65%</span>
+                                                </div>
+                                                <div class="progress">
+                                                    <div id="homeWinProgress" class="progress-bar progress-bar-home" role="progressbar" style="width: 65%"></div>
+                                                </div>
+                                            </div>
+                                            <div class="mb-2">
+                                                <div class="d-flex justify-content-between">
+                                                    <span>Draw</span>
+                                                    <span id="drawProb">20%</span>
+                                                </div>
+                                                <div class="progress">
+                                                    <div id="drawProgress" class="progress-bar progress-bar-draw" role="progressbar" style="width: 20%"></div>
+                                                </div>
+                                            </div>
+                                            <div class="mb-2">
+                                                <div class="d-flex justify-content-between">
+                                                    <span>Away Win</span>
+                                                    <span id="awayWinProb">15%</span>
+                                                </div>
+                                                <div class="progress">
+                                                    <div id="awayWinProgress" class="progress-bar progress-bar-away" role="progressbar" style="width: 15%"></div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="card tactical-card">
+                                        <div class="card-body">
+                                            <h5 class="card-title">Key Tactical Insights</h5>
+                                            <div id="tacticalInsights">
+                                                <div class="mb-3">
+                                                    <div class="d-flex justify-content-between">
+                                                        <span>Pressing Mismatch</span>
+                                                        <span id="pressingMismatchValue">+0.45</span>
+                                                    </div>
+                                                    <div class="progress feature-importance">
+                                                        <div id="pressingMismatchBar" class="progress-bar feature-bar" role="progressbar" style="width: 45%"></div>
+                                                    </div>
+                                                </div>
+                                                <div class="mb-3">
+                                                    <div class="d-flex justify-content-between">
+                                                        <span>Possession vs Defense</span>
+                                                        <span id="possessionDefenseValue">+0.32</span>
+                                                    </div>
+                                                    <div class="progress feature-importance">
+                                                        <div id="possessionDefenseBar" class="progress-bar feature-bar" role="progressbar" style="width: 32%"></div>
+                                                    </div>
+                                                </div>
+                                                <div class="mb-3">
+                                                    <div class="d-flex justify-content-between">
+                                                        <span>Counter vs Defense</span>
+                                                        <span id="counterDefenseValue">-0.18</span>
+                                                    </div>
+                                                    <div class="progress feature-importance">
+                                                        <div id="counterDefenseBar" class="progress-bar feature-bar" role="progressbar" style="width: 18%"></div>
+                                                    </div>
+                                                </div>
+                                                <div class="mb-3">
+                                                    <div class="d-flex justify-content-between">
+                                                        <span>Wing Width Mismatch</span>
+                                                        <span id="wingWidthValue">+0.27</span>
+                                                    </div>
+                                                    <div class="progress feature-importance">
+                                                        <div id="wingWidthBar" class="progress-bar feature-bar" role="progressbar" style="width: 27%"></div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="alert alert-warning mt-3">
+                                                <i class="bi bi-info-circle"></i> 
+                                                <span id="tacticalSummary">Home team has a significant pressing advantage which could disrupt away team's build-up play.</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row mb-4" id="about">
+            <div class="col-md-12">
+                <div class="card">
+                    <div class="card-header bg-info text-white">
+                        <h3><i class="bi bi-info-circle"></i> About the Model</h3>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <h5>How It Works</h5>
+                                <p>
+                                    Our prediction model combines manager tactical styles with team performance metrics to predict match outcomes.
+                                    The model analyzes tactical mismatches between managers and identifies advantages in specific areas of play.
+                                </p>
+                                <p>
+                                    Key features used in prediction:
+                                </p>
+                                <ul>
+                                    <li><strong>Tactical Features:</strong> Pressing intensity, possession control, counter-attack focus, etc.</li>
+                                    <li><strong>Squad Features:</strong> Elo ratings, goal difference, points per game</li>
+                                    <li><strong>Tactical Mismatches:</strong> Specific advantages in pressing, possession, counter-attacks</li>
+                                </ul>
+                            </div>
+                            <div class="col-md-6">
+                                <h5>Model Performance</h5>
+                                <p>
+                                    The model was trained on data from the top 5 European leagues using a temporal split approach,
+                                    with earlier matches used for training and later matches for testing.
+                                </p>
+                                <p>
+                                    <strong>Accuracy:</strong> 54.78% (CatBoost model)
+                                </p>
+                                <p>
+                                    <strong>Feature Importance:</strong>
+                                </p>
+                                <ul>
+                                    <li>Squad strength features: 52%</li>
+                                    <li>Tactical features: 48%</li>
+                                </ul>
+                                <p>
+                                    The model performs best at predicting home wins, followed by away wins, with draws being the most difficult to predict.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <footer class="footer">
+        <div class="container">
+            <div class="row">
+                <div class="col-md-6">
+                    <h5>Football Match Predictor</h5>
+                    <p>
+                        A data-driven approach to predicting football match outcomes by combining manager tactical styles with team strength metrics.
+                    </p>
+                </div>
+                <div class="col-md-6 text-md-end">
+                    <p>
+                        Data provided by API-Football
+                    </p>
+                    <p>
+                        &copy; 2025 Football Match Predictor
+                    </p>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="app.js"></script>
+</body>
+</html>
