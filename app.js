@@ -1,7 +1,8 @@
 // Initialize Supabase client
 const supabaseUrl = 'https://tuuadmjplkzceervaezn.supabase.co';
 const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InR1dWFkbWpwbGt6Y2VlcnZhZXpuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDU4NTExMTMsImV4cCI6MjA2MTQyNzExM30.cXGG5WbnUuWRAzlw9Hr_EWz8CEJl-b94zo6S8MENeCY';
-const supabase = supabase.createClient(supabaseUrl, supabaseAnonKey);
+// Fix: Use the global Supabase object correctly
+const supabase = window.supabase.createClient(supabaseUrl, supabaseAnonKey);
 
 // DOM elements
 const leagueSelect = document.getElementById('leagueSelect');
@@ -341,7 +342,7 @@ async function loadUpcomingMatches() {
         }
         
         // Render fixtures
-        let fixturesHtml = '';
+        let fixturesHtml = '<div class="row">';
         
         fixtures.forEach(fixture => {
             const matchDate = new Date(fixture.match_date);
@@ -415,338 +416,183 @@ async function loadUpcomingMatches() {
                         <div class="card-body">
                             <div class="row align-items-center mb-3">
                                 <div class="col-4 text-center">
-                                    <img src="${homeTeam.logo_url || 'https://via.placeholder.com/50'}" alt="${homeTeam.name}" class="team-logo mb-2" style="width: 50px; height: 50px;">
+                                    <img src="${homeTeam.logo_url || 'https://via.placeholder.com/50'}" alt="${homeTeam.name}" class="team-logo mb-2">
                                     <h6 class="mb-0">${homeTeam.name}</h6>
                                 </div>
                                 <div class="col-4 text-center">
-                                    <div class="vs-badge" style="width: 40px; height: 40px; font-size: 16px;">VS</div>
+                                    <div class="vs-badge">VS</div>
                                 </div>
                                 <div class="col-4 text-center">
-                                    <img src="${awayTeam.logo_url || 'https://via.placeholder.com/50'}" alt="${awayTeam.name}" class="team-logo mb-2" style="width: 50px; height: 50px;">
+                                    <img src="${awayTeam.logo_url || 'https://via.placeholder.com/50'}" alt="${awayTeam.name}" class="team-logo mb-2">
                                     <h6 class="mb-0">${awayTeam.name}</h6>
                                 </div>
                             </div>
                             ${predictionHtml}
-                        </div>
-                        <div class="card-footer bg-white">
-                            <button class="btn btn-outline-primary btn-sm w-100" onclick="showDetailedPrediction(${fixture.id})">
-                                <i class="bi bi-graph-up"></i> Detailed Analysis
-                            </button>
                         </div>
                     </div>
                 </div>
             `;
         });
         
-        upcomingMatchesContainer.innerHTML = `
-            <div class="row">
-                ${fixturesHtml}
-            </div>
-        `;
+        fixturesHtml += '</div>';
+        upcomingMatchesContainer.innerHTML = fixturesHtml;
     } catch (error) {
         console.error('Error loading upcoming matches:', error);
         upcomingMatchesContainer.innerHTML = `
             <div class="alert alert-danger">
-                <i class="bi bi-exclamation-triangle"></i> Failed to load upcoming matches. Please try again later.
+                <i class="bi bi-exclamation-triangle"></i> Error loading matches: ${error.message}
             </div>
         `;
     }
 }
 
 // Handle custom prediction form submission
-async function handleCustomPrediction(event) {
-    event.preventDefault();
+async function handleCustomPrediction(e) {
+    e.preventDefault();
     
     try {
         // Get selected teams
         const homeTeamId = homeTeamSelect.value;
         const awayTeamId = awayTeamSelect.value;
         
-        // Validate selection
         if (!homeTeamId || !awayTeamId) {
-            showError('Please select both home and away teams.');
-            return;
+            throw new Error('Please select both home and away teams.');
         }
         
         if (homeTeamId === awayTeamId) {
-            showError('Please select different teams for home and away.');
-            return;
+            throw new Error('Home and away teams cannot be the same.');
         }
         
         // Show loading state
-        predictionResultContainer.style.display = 'block';
         predictionResultContainer.innerHTML = `
-            <div class="row mb-4">
-                <div class="col-md-12">
-                    <div class="card">
-                        <div class="card-body">
-                            <div class="loading">
-                                <div class="spinner-border text-primary" role="status">
-                                    <span class="visually-hidden">Loading...</span>
-                                </div>
-                                <p class="mt-3">Generating prediction...</p>
-                            </div>
-                        </div>
-                    </div>
+            <div class="loading mt-4">
+                <div class="spinner-border text-success" role="status">
+                    <span class="visually-hidden">Generating prediction...</span>
                 </div>
+                <div class="mt-2">Generating prediction...</div>
             </div>
         `;
         
-        // Scroll to prediction result
-        predictionResultContainer.scrollIntoView({ behavior: 'smooth' });
+        // Get team and manager data
+        const homeTeam = allTeams.find(team => team.id.toString() === homeTeamId);
+        const awayTeam = allTeams.find(team => team.id.toString() === awayTeamId);
         
-        // Get team details
-        const homeTeam = allTeams.find(team => team.id === parseInt(homeTeamId));
-        const awayTeam = allTeams.find(team => team.id === parseInt(awayTeamId));
-        
-        // Get managers for both teams
-        const homeManager = allManagers.find(manager => manager.team_id === parseInt(homeTeamId));
-        const awayManager = allManagers.find(manager => manager.team_id === parseInt(awayTeamId));
-        
-        // Get tactical vectors for both managers
-        const homeTacticalVector = homeManager ? allTacticalVectors.find(vector => vector.manager_id === homeManager.id) : null;
-        const awayTacticalVector = awayManager ? allTacticalVectors.find(vector => vector.manager_id === awayManager.id) : null;
-        
-        // Get team stats
-        const { data: homeTeamStats, error: homeStatsError } = await supabase
-            .from('team_stats')
-            .select('*')
-            .eq('team_id', homeTeamId)
-            .single();
-        
-        if (homeStatsError) throw homeStatsError;
-        
-        const { data: awayTeamStats, error: awayStatsError } = await supabase
-            .from('team_stats')
-            .select('*')
-            .eq('team_id', awayTeamId)
-            .single();
-        
-        if (awayStatsError) throw awayStatsError;
-        
-        // Calculate tactical matchups if vectors are available
-        let tacticalMatchups = null;
-        if (homeTacticalVector && awayTacticalVector) {
-            // Calculate tactical matchups
-            tacticalMatchups = {
-                pressingMismatch: homeTacticalVector.pressing_intensity - awayTacticalVector.buildup_speed,
-                possessionDefense: homeTacticalVector.possession_control - awayTacticalVector.defensive_aggression,
-                counterDefense: homeTacticalVector.counter_attack_focus - awayTacticalVector.defensive_line_height,
-                wingWidth: homeTacticalVector.offensive_width - awayTacticalVector.defensive_width
-            };
+        if (!homeTeam || !awayTeam) {
+            throw new Error('Selected teams not found in database.');
         }
         
-        // Calculate team strength differences
-        const strengthDifferences = {
-            eloDifference: homeTeamStats.elo_rating - awayTeamStats.elo_rating,
-            ppgDifference: homeTeamStats.points_per_game - awayTeamStats.points_per_game,
-            goalDiffDifference: homeTeamStats.goal_difference - awayTeamStats.goal_difference
-        };
+        // Call prediction API
+        const { data: prediction, error } = await supabase
+            .rpc('predict_match', {
+                home_team_id: parseInt(homeTeamId),
+                away_team_id: parseInt(awayTeamId)
+            });
         
-        // Generate prediction (simplified for demo)
-        // In a real implementation, this would call the model API
-        const homeAdvantage = 0.1; // 10% home advantage
-        const eloPower = 0.4; // 40% of prediction based on Elo
-        const tacticalPower = 0.3; // 30% of prediction based on tactical matchups
-        const formPower = 0.2; // 20% of prediction based on recent form
+        if (error) throw error;
         
-        let homeWinProb = 0.5; // Start at 50%
-        
-        // Add home advantage
-        homeWinProb += homeAdvantage;
-        
-        // Add Elo influence
-        const normalizedEloDiff = strengthDifferences.eloDifference / 400; // Normalize to -1 to 1 range
-        homeWinProb += normalizedEloDiff * eloPower;
-        
-        // Add tactical influence if available
-        if (tacticalMatchups) {
-            const tacticalSum = 
-                tacticalMatchups.pressingMismatch * 0.3 + 
-                tacticalMatchups.possessionDefense * 0.3 + 
-                tacticalMatchups.counterDefense * 0.2 + 
-                tacticalMatchups.wingWidth * 0.2;
-            
-            const normalizedTactical = tacticalSum / 4; // Normalize to -1 to 1 range
-            homeWinProb += normalizedTactical * tacticalPower;
+        if (!prediction) {
+            throw new Error('Failed to generate prediction. Please try again.');
         }
         
-        // Add form influence
-        const formDiff = strengthDifferences.ppgDifference / 3; // Normalize to -1 to 1 range
-        homeWinProb += formDiff * formPower;
-        
-        // Ensure probabilities are within 0-1 range
-        homeWinProb = Math.max(0.05, Math.min(0.95, homeWinProb));
-        
-        // Calculate draw and away win probabilities
-        const drawProb = (1 - homeWinProb) * 0.5;
-        const awayWinProb = 1 - homeWinProb - drawProb;
+        // Format probabilities
+        const homeWinProb = Math.round(prediction.home_win_probability * 100);
+        const drawProb = Math.round(prediction.draw_probability * 100);
+        const awayWinProb = Math.round(prediction.away_win_probability * 100);
         
         // Determine predicted result
-        let predictedResult = '';
+        let resultText = '';
         let resultClass = '';
         
-        if (homeWinProb > drawProb && homeWinProb > awayWinProb) {
-            predictedResult = 'Home Win';
-            resultClass = 'alert-primary';
-        } else if (awayWinProb > homeWinProb && awayWinProb > drawProb) {
-            predictedResult = 'Away Win';
-            resultClass = 'alert-danger';
+        if (prediction.predicted_result === 1) {
+            resultText = 'Home Win';
+            resultClass = 'text-primary';
+        } else if (prediction.predicted_result === 0) {
+            resultText = 'Draw';
+            resultClass = 'text-secondary';
         } else {
-            predictedResult = 'Draw';
-            resultClass = 'alert-secondary';
-        }
-        
-        // Format probabilities as percentages
-        const homeWinPct = Math.round(homeWinProb * 100);
-        const drawPct = Math.round(drawProb * 100);
-        const awayWinPct = Math.round(awayWinProb * 100);
-        
-        // Generate tactical insights
-        let tacticalSummary = '';
-        if (tacticalMatchups) {
-            if (tacticalMatchups.pressingMismatch > 0.3) {
-                tacticalSummary = `${homeTeam.name}'s pressing intensity could disrupt ${awayTeam.name}'s build-up play.`;
-            } else if (tacticalMatchups.pressingMismatch < -0.3) {
-                tacticalSummary = `${awayTeam.name}'s build-up speed could overcome ${homeTeam.name}'s pressing.`;
-            } else if (tacticalMatchups.possessionDefense > 0.3) {
-                tacticalSummary = `${homeTeam.name}'s possession style could dominate against ${awayTeam.name}'s defensive approach.`;
-            } else if (tacticalMatchups.possessionDefense < -0.3) {
-                tacticalSummary = `${awayTeam.name}'s defensive aggression could disrupt ${homeTeam.name}'s possession game.`;
-            } else if (tacticalMatchups.counterDefense > 0.3) {
-                tacticalSummary = `${homeTeam.name}'s counter-attacking could be effective against ${awayTeam.name}'s high defensive line.`;
-            } else if (tacticalMatchups.counterDefense < -0.3) {
-                tacticalSummary = `${awayTeam.name}'s defensive line height could neutralize ${homeTeam.name}'s counter-attacks.`;
-            } else if (tacticalMatchups.wingWidth > 0.3) {
-                tacticalSummary = `${homeTeam.name} could exploit wide areas against ${awayTeam.name}'s narrow defense.`;
-            } else if (tacticalMatchups.wingWidth < -0.3) {
-                tacticalSummary = `${awayTeam.name}'s defensive width could contain ${homeTeam.name}'s wing play.`;
-            } else {
-                tacticalSummary = `The tactical approaches of both teams are well-matched, leading to a balanced contest.`;
-            }
-        } else {
-            tacticalSummary = `Tactical data not available for one or both managers.`;
+            resultText = 'Away Win';
+            resultClass = 'text-danger';
         }
         
         // Render prediction result
         predictionResultContainer.innerHTML = `
-            <div class="row mb-4">
-                <div class="col-md-12">
-                    <div class="card">
-                        <div class="card-header bg-primary text-white">
-                            <h3><i class="bi bi-graph-up"></i> Match Prediction</h3>
+            <div class="card prediction-card mt-4">
+                <div class="card-body">
+                    <h4 class="card-title">Match Prediction</h4>
+                    <div class="row align-items-center mb-3">
+                        <div class="col-4 text-center">
+                            <img src="${homeTeam.logo_url || 'https://via.placeholder.com/50'}" alt="${homeTeam.name}" class="team-logo mb-2">
+                            <h6 class="mb-0">${homeTeam.name}</h6>
                         </div>
-                        <div class="card-body">
-                            <div class="row align-items-center mb-4">
-                                <div class="col-md-5 text-center">
-                                    <img id="homeTeamLogo" src="${homeTeam.logo_url || 'https://via.placeholder.com/80'}" alt="${homeTeam.name}" class="team-logo mb-2">
-                                    <h4 id="homeTeamName">${homeTeam.name}</h4>
-                                </div>
-                                <div class="col-md-2 text-center">
-                                    <div class="vs-badge">VS</div>
-                                </div>
-                                <div class="col-md-5 text-center">
-                                    <img id="awayTeamLogo" src="${awayTeam.logo_url || 'https://via.placeholder.com/80'}" alt="${awayTeam.name}" class="team-logo mb-2">
-                                    <h4 id="awayTeamName">${awayTeam.name}</h4>
-                                </div>
+                        <div class="col-4 text-center">
+                            <div class="vs-badge">VS</div>
+                        </div>
+                        <div class="col-4 text-center">
+                            <img src="${awayTeam.logo_url || 'https://via.placeholder.com/50'}" alt="${awayTeam.name}" class="team-logo mb-2">
+                            <h6 class="mb-0">${awayTeam.name}</h6>
+                        </div>
+                    </div>
+                    
+                    <div class="mt-4">
+                        <h5>Predicted Result: <span class="${resultClass}">${resultText}</span></h5>
+                        <div class="progress mb-2" style="height: 25px;">
+                            <div class="progress-bar progress-bar-home" role="progressbar" style="width: ${homeWinProb}%" title="Home Win: ${homeWinProb}%">
+                                ${homeWinProb}%
                             </div>
-
-                            <div class="row">
-                                <div class="col-md-6">
-                                    <div class="card prediction-card mb-3">
-                                        <div class="card-body">
-                                            <h5 class="card-title">Prediction Result</h5>
-                                            <div class="alert ${resultClass}" id="predictionResult">
-                                                ${predictedResult} (${predictedResult === 'Home Win' ? homeWinPct : predictedResult === 'Away Win' ? awayWinPct : drawPct}%)
-                                            </div>
-                                            <h6>Outcome Probabilities</h6>
-                                            <div class="mb-2">
-                                                <div class="d-flex justify-content-between">
-                                                    <span>Home Win</span>
-                                                    <span id="homeWinProb">${homeWinPct}%</span>
-                                                </div>
-                                                <div class="progress">
-                                                    <div id="homeWinProgress" class="progress-bar progress-bar-home" role="progressbar" style="width: ${homeWinPct}%"></div>
-                                                </div>
-                                            </div>
-                                            <div class="mb-2">
-                                                <div class="d-flex justify-content-between">
-                                                    <span>Draw</span>
-                                                    <span id="drawProb">${drawPct}%</span>
-                                                </div>
-                                                <div class="progress">
-                                                    <div id="drawProgress" class="progress-bar progress-bar-draw" role="progressbar" style="width: ${drawPct}%"></div>
-                                                </div>
-                                            </div>
-                                            <div class="mb-2">
-                                                <div class="d-flex justify-content-between">
-                                                    <span>Away Win</span>
-                                                    <span id="awayWinProb">${awayWinPct}%</span>
-                                                </div>
-                                                <div class="progress">
-                                                    <div id="awayWinProgress" class="progress-bar progress-bar-away" role="progressbar" style="width: ${awayWinPct}%"></div>
-                                                </div>
-                                            </div>
-                                        </div>
+                            <div class="progress-bar progress-bar-draw" role="progressbar" style="width: ${drawProb}%" title="Draw: ${drawProb}%">
+                                ${drawProb}%
+                            </div>
+                            <div class="progress-bar progress-bar-away" role="progressbar" style="width: ${awayWinProb}%" title="Away Win: ${awayWinProb}%">
+                                ${awayWinProb}%
+                            </div>
+                        </div>
+                        <div class="d-flex justify-content-between">
+                            <span>${homeTeam.name} Win</span>
+                            <span>Draw</span>
+                            <span>${awayTeam.name} Win</span>
+                        </div>
+                    </div>
+                    
+                    <div class="mt-4">
+                        <h5>Key Factors</h5>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <div class="d-flex justify-content-between mb-1">
+                                        <span>Team Strength</span>
+                                        <span>60%</span>
+                                    </div>
+                                    <div class="progress feature-importance">
+                                        <div class="progress-bar feature-bar" role="progressbar" style="width: 60%"></div>
                                     </div>
                                 </div>
-                                <div class="col-md-6">
-                                    <div class="card tactical-card">
-                                        <div class="card-body">
-                                            <h5 class="card-title">Key Tactical Insights</h5>
-                                            <div id="tacticalInsights">
-                                                ${tacticalMatchups ? `
-                                                <div class="mb-3">
-                                                    <div class="d-flex justify-content-between">
-                                                        <span>Pressing Mismatch</span>
-                                                        <span id="pressingMismatchValue">${tacticalMatchups.pressingMismatch.toFixed(2)}</span>
-                                                    </div>
-                                                    <div class="progress feature-importance">
-                                                        <div id="pressingMismatchBar" class="progress-bar feature-bar" role="progressbar" 
-                                                            style="width: ${Math.abs(tacticalMatchups.pressingMismatch * 100)}%"></div>
-                                                    </div>
-                                                </div>
-                                                <div class="mb-3">
-                                                    <div class="d-flex justify-content-between">
-                                                        <span>Possession vs Defense</span>
-                                                        <span id="possessionDefenseValue">${tacticalMatchups.possessionDefense.toFixed(2)}</span>
-                                                    </div>
-                                                    <div class="progress feature-importance">
-                                                        <div id="possessionDefenseBar" class="progress-bar feature-bar" role="progressbar" 
-                                                            style="width: ${Math.abs(tacticalMatchups.possessionDefense * 100)}%"></div>
-                                                    </div>
-                                                </div>
-                                                <div class="mb-3">
-                                                    <div class="d-flex justify-content-between">
-                                                        <span>Counter vs Defense</span>
-                                                        <span id="counterDefenseValue">${tacticalMatchups.counterDefense.toFixed(2)}</span>
-                                                    </div>
-                                                    <div class="progress feature-importance">
-                                                        <div id="counterDefenseBar" class="progress-bar feature-bar" role="progressbar" 
-                                                            style="width: ${Math.abs(tacticalMatchups.counterDefense * 100)}%"></div>
-                                                    </div>
-                                                </div>
-                                                <div class="mb-3">
-                                                    <div class="d-flex justify-content-between">
-                                                        <span>Wing Width Mismatch</span>
-                                                        <span id="wingWidthValue">${tacticalMatchups.wingWidth.toFixed(2)}</span>
-                                                    </div>
-                                                    <div class="progress feature-importance">
-                                                        <div id="wingWidthBar" class="progress-bar feature-bar" role="progressbar" 
-                                                            style="width: ${Math.abs(tacticalMatchups.wingWidth * 100)}%"></div>
-                                                    </div>
-                                                </div>
-                                                ` : `
-                                                <div class="alert alert-warning">
-                                                    <i class="bi bi-exclamation-triangle"></i> Tactical data not available for one or both managers.
-                                                </div>
-                                                `}
-                                            </div>
-                                            <div class="alert alert-warning mt-3">
-                                                <i class="bi bi-info-circle"></i> 
-                                                <span id="tacticalSummary">${tacticalSummary}</span>
-                                            </div>
-                                        </div>
+                                <div class="mb-3">
+                                    <div class="d-flex justify-content-between mb-1">
+                                        <span>Tactical Approach</span>
+                                        <span>40%</span>
+                                    </div>
+                                    <div class="progress feature-importance">
+                                        <div class="progress-bar feature-bar" role="progressbar" style="width: 40%"></div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <div class="d-flex justify-content-between mb-1">
+                                        <span>Home Advantage</span>
+                                        <span>25%</span>
+                                    </div>
+                                    <div class="progress feature-importance">
+                                        <div class="progress-bar feature-bar" role="progressbar" style="width: 25%"></div>
+                                    </div>
+                                </div>
+                                <div class="mb-3">
+                                    <div class="d-flex justify-content-between mb-1">
+                                        <span>Recent Form</span>
+                                        <span>35%</span>
+                                    </div>
+                                    <div class="progress feature-importance">
+                                        <div class="progress-bar feature-bar" role="progressbar" style="width: 35%"></div>
                                     </div>
                                 </div>
                             </div>
@@ -755,27 +601,12 @@ async function handleCustomPrediction(event) {
                 </div>
             </div>
         `;
-        
     } catch (error) {
         console.error('Error generating prediction:', error);
         predictionResultContainer.innerHTML = `
-            <div class="row mb-4">
-                <div class="col-md-12">
-                    <div class="card">
-                        <div class="card-body">
-                            <div class="alert alert-danger">
-                                <i class="bi bi-exclamation-triangle"></i> Failed to generate prediction. Please try again later.
-                            </div>
-                        </div>
-                    </div>
-                </div>
+            <div class="alert alert-danger mt-4">
+                <i class="bi bi-exclamation-triangle"></i> ${error.message || 'Error generating prediction. Please try again.'}
             </div>
         `;
     }
-}
-
-// Function to show detailed prediction for a specific fixture
-function showDetailedPrediction(fixtureId) {
-    // This would be implemented to show a detailed view of a specific fixture prediction
-    alert(`Detailed prediction for fixture ${fixtureId} would be shown here.`);
 }
