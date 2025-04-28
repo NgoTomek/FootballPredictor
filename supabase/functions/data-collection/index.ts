@@ -53,10 +53,14 @@ async function makeApiRequest(endpoint, params = {}) {
   const startTime = Date.now();
   
   try {
-    const response = await fetch(url, { 
+    // Construct query parameters string manually for fetch API
+    const queryParams = new URLSearchParams(params).toString();
+    const requestUrl = queryParams ? `${url}?${queryParams}` : url;
+    
+    console.log(`Making API request to: ${requestUrl}`);
+    const response = await fetch(requestUrl, { 
       method: 'GET',
-      headers: headers,
-      params: params 
+      headers: headers
     });
     
     const responseSize = parseInt(response.headers.get('content-length') || '0');
@@ -67,13 +71,16 @@ async function makeApiRequest(endpoint, params = {}) {
     await logApiCall(endpoint, params, statusCode, responseSize, executionTime);
     
     if (response.status === 200) {
-      return await response.json();
+      const data = await response.json();
+      console.log(`API request successful for ${endpoint}. Results: ${data?.results || 0}`);
+      return data;
     } else {
-      console.error(`API request failed: ${response.status} - ${await response.text()}`);
+      const errorText = await response.text();
+      console.error(`API request failed for ${endpoint}: ${response.status} - ${errorText}`);
       return null;
     }
   } catch (e) {
-    console.error(`Error making API request: ${e}`);
+    console.error(`Error making API request to ${endpoint}: ${e}`);
     return null;
   }
 }
@@ -109,73 +116,78 @@ async function fetchAndStoreFixtures() {
           .from("teams")
           .select("id")
           .eq("api_id", teamsInfo.home.id)
-          .single();
+          .maybeSingle(); // Use maybeSingle to handle potential null
         
         const { data: awayTeam, error: awayTeamError } = await supabase
           .from("teams")
           .select("id")
           .eq("api_id", teamsInfo.away.id)
-          .single();
+          .maybeSingle(); // Use maybeSingle to handle potential null
         
         if (homeTeamError || awayTeamError) {
-          console.error(`Could not find teams for fixture: ${teamsInfo.home.name} vs ${teamsInfo.away.name}`);
+          console.error(`Error fetching team IDs for fixture ${fixtureInfo.id}: ${homeTeamError?.message || awayTeamError?.message}`);
+          continue;
+        }
+        
+        if (!homeTeam || !awayTeam) {
+          console.warn(`Could not find one or both teams in DB for fixture API ID ${fixtureInfo.id} (Home API ID: ${teamsInfo.home.id}, Away API ID: ${teamsInfo.away.id})`);
           continue;
         }
         
         // Check if fixture already exists
-        const { data: existingFixture, error: fixtureError } = await supabase
+        const { data: existingFixture, error: fixtureCheckError } = await supabase
           .from("fixtures")
-          .select("*")
+          .select("id") // Only select id for checking existence
           .eq("api_id", fixtureInfo.id)
           .maybeSingle();
         
-        if (fixtureError) {
-          console.error(`Error checking for existing fixture: ${fixtureError.message}`);
+        if (fixtureCheckError) {
+          console.error(`Error checking for existing fixture ${fixtureInfo.id}: ${fixtureCheckError.message}`);
           continue;
         }
         
+        const fixtureData = {
+          home_team_id: homeTeam.id,
+          away_team_id: awayTeam.id,
+          league_id: league.id,
+          season: CURRENT_SEASON,
+          match_date: fixtureInfo.date,
+          home_score: goalsInfo.home,
+          away_score: goalsInfo.away,
+          status: fixtureInfo.status.short,
+          api_id: fixtureInfo.id
+        };
+
         if (!existingFixture) {
           // Insert fixture into database
           const { error: insertError } = await supabase
             .from("fixtures")
-            .insert({
-              home_team_id: homeTeam.id,
-              away_team_id: awayTeam.id,
-              league_id: league.id,
-              season: CURRENT_SEASON,
-              match_date: fixtureInfo.date,
-              home_score: goalsInfo.home,
-              away_score: goalsInfo.away,
-              status: fixtureInfo.status.short,
-              api_id: fixtureInfo.id
-            });
+            .insert(fixtureData);
           
           if (insertError) {
-            console.error(`Error inserting fixture: ${insertError.message}`);
+            console.error(`Error inserting fixture ${fixtureInfo.id}: ${insertError.message}`);
           } else {
-            console.log(`Added fixture: ${teamsInfo.home.name} vs ${teamsInfo.away.name}`);
+            console.log(`Added fixture: ${teamsInfo.home.name} vs ${teamsInfo.away.name} (API ID: ${fixtureInfo.id})`);
           }
         } else {
           // Update fixture information
           const { error: updateError } = await supabase
             .from("fixtures")
-            .update({
-              home_score: goalsInfo.home,
-              away_score: goalsInfo.away,
-              status: fixtureInfo.status.short
-            })
+            .update(fixtureData) // Update all fields in case something changed
             .eq("api_id", fixtureInfo.id);
           
           if (updateError) {
-            console.error(`Error updating fixture: ${updateError.message}`);
+            console.error(`Error updating fixture ${fixtureInfo.id}: ${updateError.message}`);
           } else {
-            console.log(`Updated fixture: ${teamsInfo.home.name} vs ${teamsInfo.away.name}`);
+            console.log(`Updated fixture: ${teamsInfo.home.name} vs ${teamsInfo.away.name} (API ID: ${fixtureInfo.id})`);
           }
         }
       }
     } else {
-      console.log(`Failed to fetch fixtures for league: ${league.name}`);
+      console.log(`No fixtures found or error fetching fixtures for league: ${league.name} (API ID: ${league.api_id})`);
     }
+    // Add a small delay between league requests
+    await new Promise(resolve => setTimeout(resolve, 500)); 
   }
 }
 
@@ -185,7 +197,7 @@ async function fetchAndStoreTeamStats() {
   // Get all teams from database
   const { data: teams, error: teamsError } = await supabase
     .from("teams")
-    .select("*");
+    .select("id, api_id, name, league_id");
   
   if (teamsError) {
     console.error(`Error fetching teams: ${teamsError.message}`);
@@ -216,26 +228,35 @@ async function fetchAndStoreTeamStats() {
       const stats = statsData.response;
       
       // Calculate points per game
-      const fixturesPlayed = stats.fixtures.played.total;
-      const points = stats.fixtures.wins.total * 3 + stats.fixtures.draws.total;
+      const fixturesPlayed = stats.fixtures?.played?.total || 0;
+      const points = (stats.fixtures?.wins?.total || 0) * 3 + (stats.fixtures?.draws?.total || 0);
       const ppg = fixturesPlayed > 0 ? points / fixturesPlayed : 0;
       
       // Use a simple Elo rating calculation
       const baseElo = 1500;
-      const winAdjustment = stats.fixtures.wins.total * 20;
-      const lossAdjustment = stats.fixtures.loses.total * 10;
+      const winAdjustment = (stats.fixtures?.wins?.total || 0) * 20;
+      const lossAdjustment = (stats.fixtures?.loses?.total || 0) * 10;
       const eloRating = baseElo + winAdjustment - lossAdjustment;
       
+      const teamStatsData = {
+        team_id: team.id,
+        season: CURRENT_SEASON,
+        elo_rating: eloRating,
+        goals_scored: stats.goals?.for?.total?.total || 0,
+        goals_conceded: stats.goals?.against?.total?.total || 0,
+        points_per_game: ppg
+      };
+
       // Check if team stats already exist
-      const { data: existingStats, error: statsError } = await supabase
+      const { data: existingStats, error: statsCheckError } = await supabase
         .from("team_stats")
-        .select("*")
+        .select("id") // Only select id
         .eq("team_id", team.id)
         .eq("season", CURRENT_SEASON)
         .maybeSingle();
       
-      if (statsError) {
-        console.error(`Error checking for existing team stats: ${statsError.message}`);
+      if (statsCheckError) {
+        console.error(`Error checking for existing team stats for team ${team.id}: ${statsCheckError.message}`);
         continue;
       }
       
@@ -243,17 +264,10 @@ async function fetchAndStoreTeamStats() {
         // Insert team stats into database
         const { error: insertError } = await supabase
           .from("team_stats")
-          .insert({
-            team_id: team.id,
-            season: CURRENT_SEASON,
-            elo_rating: eloRating,
-            goals_scored: stats.goals.for.total.total,
-            goals_conceded: stats.goals.against.total.total,
-            points_per_game: ppg
-          });
+          .insert(teamStatsData);
         
         if (insertError) {
-          console.error(`Error inserting team stats: ${insertError.message}`);
+          console.error(`Error inserting team stats for team ${team.id}: ${insertError.message}`);
         } else {
           console.log(`Added team stats for: ${team.name}`);
         }
@@ -261,79 +275,94 @@ async function fetchAndStoreTeamStats() {
         // Update team stats
         const { error: updateError } = await supabase
           .from("team_stats")
-          .update({
-            elo_rating: eloRating,
-            goals_scored: stats.goals.for.total.total,
-            goals_conceded: stats.goals.against.total.total,
-            points_per_game: ppg
-          })
+          .update(teamStatsData)
           .eq("team_id", team.id)
           .eq("season", CURRENT_SEASON);
         
         if (updateError) {
-          console.error(`Error updating team stats: ${updateError.message}`);
+          console.error(`Error updating team stats for team ${team.id}: ${updateError.message}`);
         } else {
           console.log(`Updated team stats for: ${team.name}`);
         }
       }
     } else {
-      console.log(`Failed to fetch statistics for team: ${team.name}`);
+      console.log(`Failed to fetch statistics for team: ${team.name} (API ID: ${team.api_id})`);
     }
+    // Add a small delay between team requests
+    await new Promise(resolve => setTimeout(resolve, 500)); 
   }
 }
 
 async function updateTacticalMatchups() {
   console.log("Updating tactical matchups for fixtures...");
-  
-  // Get fixtures that don't have tactical matchups yet
-  const { data: fixtures, error: fixturesError } = await supabase
-    .from("fixtures")
-    .select("*")
-    .not("id", "in", supabase.from("tactical_matchups").select("fixture_id"));
-  
-  if (fixturesError) {
-    console.error(`Error fetching fixtures: ${fixturesError.message}`);
+
+  // 1. Get IDs of fixtures that already have tactical matchups
+  const { data: existingMatchupFixtureIdsData, error: existingMatchupError } = await supabase
+    .from("tactical_matchups")
+    .select("fixture_id");
+
+  if (existingMatchupError) {
+    console.error(`Error fetching existing tactical matchup fixture IDs: ${existingMatchupError.message}`);
     return;
   }
-  
-  for (const fixture of fixtures) {
+  const existingMatchupFixtureIds = existingMatchupFixtureIdsData.map(item => item.fixture_id);
+  console.log(`Found ${existingMatchupFixtureIds.length} existing tactical matchups.`);
+
+  // 2. Get fixtures that DO NOT have tactical matchups yet
+  let query = supabase
+    .from("fixtures")
+    .select("id, home_team_id, away_team_id");
+
+  if (existingMatchupFixtureIds.length > 0) {
+    query = query.not("id", "in", `(${existingMatchupFixtureIds.join(',')})`);
+  }
+
+  const { data: fixturesToProcess, error: fixturesError } = await query;
+
+  if (fixturesError) {
+    console.error(`Error fetching fixtures needing tactical matchups: ${fixturesError.message}`);
+    return;
+  }
+  console.log(`Found ${fixturesToProcess.length} fixtures needing tactical matchups.`);
+
+  for (const fixture of fixturesToProcess) {
     // Get home and away team managers
     const { data: homeTeam, error: homeTeamError } = await supabase
       .from("teams")
-      .select("*")
+      .select("id, name") // Select only needed fields
       .eq("id", fixture.home_team_id)
       .single();
     
     const { data: awayTeam, error: awayTeamError } = await supabase
       .from("teams")
-      .select("*")
+      .select("id, name") // Select only needed fields
       .eq("id", fixture.away_team_id)
       .single();
     
     if (homeTeamError || awayTeamError) {
-      console.error(`Error fetching teams for fixture ID ${fixture.id}`);
+      console.error(`Error fetching teams for fixture ID ${fixture.id}: ${homeTeamError?.message || awayTeamError?.message}`);
       continue;
     }
     
     const { data: homeManager, error: homeManagerError } = await supabase
       .from("managers")
-      .select("*")
+      .select("id") // Select only needed fields
       .eq("team_id", homeTeam.id)
       .maybeSingle();
     
     const { data: awayManager, error: awayManagerError } = await supabase
       .from("managers")
-      .select("*")
+      .select("id") // Select only needed fields
       .eq("team_id", awayTeam.id)
       .maybeSingle();
     
     if (homeManagerError || awayManagerError) {
-      console.error(`Error fetching managers for fixture ID ${fixture.id}`);
+      console.error(`Error fetching managers for fixture ID ${fixture.id}: ${homeManagerError?.message || awayManagerError?.message}`);
       continue;
     }
     
     if (!homeManager || !awayManager) {
-      console.log(`Missing managers for fixture: ${homeTeam.name} vs ${awayTeam.name}`);
+      console.log(`Missing managers for fixture: ${homeTeam.name} vs ${awayTeam.name} (ID: ${fixture.id})`);
       continue;
     }
     
@@ -351,17 +380,16 @@ async function updateTacticalMatchups() {
       .maybeSingle();
     
     if (homeVectorError || awayVectorError) {
-      console.error(`Error fetching tactical vectors for fixture ID ${fixture.id}`);
+      console.error(`Error fetching tactical vectors for fixture ID ${fixture.id}: ${homeVectorError?.message || awayVectorError?.message}`);
       continue;
     }
     
     if (!homeVector || !awayVector) {
-      console.log(`Missing tactical vectors for fixture: ${homeTeam.name} vs ${awayTeam.name}`);
+      console.log(`Missing tactical vectors for fixture: ${homeTeam.name} vs ${awayTeam.name} (ID: ${fixture.id})`);
       continue;
     }
     
     // Calculate tactical matchups
-    // Convert vectors to arrays for calculations
     const homeArray = [
       homeVector.pressing_intensity,
       homeVector.possession_control,
@@ -377,7 +405,7 @@ async function updateTacticalMatchups() {
       homeVector.chance_creation_method,
       homeVector.defensive_organization,
       homeVector.wing_play_emphasis
-    ];
+    ].map(Number); // Ensure values are numbers
     
     const awayArray = [
       awayVector.pressing_intensity,
@@ -394,13 +422,13 @@ async function updateTacticalMatchups() {
       awayVector.chance_creation_method,
       awayVector.defensive_organization,
       awayVector.wing_play_emphasis
-    ];
+    ].map(Number); // Ensure values are numbers
     
     // Calculate cosine similarity
     const dotProduct = homeArray.reduce((sum, value, index) => sum + value * awayArray[index], 0);
     const homeNorm = Math.sqrt(homeArray.reduce((sum, value) => sum + value * value, 0));
     const awayNorm = Math.sqrt(awayArray.reduce((sum, value) => sum + value * value, 0));
-    const cosineSimilarity = dotProduct / (homeNorm * awayNorm);
+    const cosineSimilarity = (homeNorm === 0 || awayNorm === 0) ? 0 : dotProduct / (homeNorm * awayNorm);
     
     // Calculate euclidean distance
     const euclideanDistance = Math.sqrt(homeArray.reduce((sum, value, index) => sum + Math.pow(value - awayArray[index], 2), 0));
@@ -427,18 +455,30 @@ async function updateTacticalMatchups() {
       });
     
     if (insertError) {
-      console.error(`Error inserting tactical matchup: ${insertError.message}`);
+      console.error(`Error inserting tactical matchup for fixture ${fixture.id}: ${insertError.message}`);
     } else {
-      console.log(`Added tactical matchup for fixture: ${homeTeam.name} vs ${awayTeam.name}`);
+      console.log(`Added tactical matchup for fixture: ${homeTeam.name} vs ${awayTeam.name} (ID: ${fixture.id})`);
     }
   }
 }
 
 async function updateEnhancedMatches() {
   console.log("Updating enhanced matches with all features...");
-  
-  // Get fixtures that have tactical matchups but not enhanced matches
-  const { data: fixtures, error: fixturesError } = await supabase
+
+  // 1. Get IDs of fixtures that already have enhanced matches
+  const { data: existingEnhancedFixtureIdsData, error: existingEnhancedError } = await supabase
+    .from("enhanced_matches")
+    .select("fixture_id");
+
+  if (existingEnhancedError) {
+    console.error(`Error fetching existing enhanced match fixture IDs: ${existingEnhancedError.message}`);
+    return;
+  }
+  const existingEnhancedFixtureIds = existingEnhancedFixtureIdsData.map(item => item.fixture_id);
+  console.log(`Found ${existingEnhancedFixtureIds.length} existing enhanced matches.`);
+
+  // 2. Get fixtures that have tactical matchups but DO NOT have enhanced matches yet
+  let query = supabase
     .from("fixtures")
     .select(`
       id,
@@ -447,23 +487,25 @@ async function updateEnhancedMatches() {
       home_score,
       away_score,
       status,
-      tactical_matchups(*)
-    `)
-    .not("id", "in", supabase.from("enhanced_matches").select("fixture_id"))
-    .not("tactical_matchups", "is", null);
-  
+      tactical_matchups!inner(*)
+    `) // Use inner join to ensure tactical_matchups exist
+    .not("tactical_matchups", "is", null); // Redundant due to inner join but safe
+
+  if (existingEnhancedFixtureIds.length > 0) {
+    query = query.not("id", "in", `(${existingEnhancedFixtureIds.join(',')})`);
+  }
+
+  const { data: fixturesToProcess, error: fixturesError } = await query;
+
   if (fixturesError) {
-    console.error(`Error fetching fixtures: ${fixturesError.message}`);
+    console.error(`Error fetching fixtures needing enhanced matches: ${fixturesError.message}`);
     return;
   }
-  
-  for (const fixture of fixtures) {
-    if (!fixture.tactical_matchups || fixture.tactical_matchups.length === 0) {
-      console.log(`Missing tactical matchup for fixture ID: ${fixture.id}`);
-      continue;
-    }
-    
-    const tacticalMatchup = fixture.tactical_matchups[0];
+  console.log(`Found ${fixturesToProcess.length} fixtures needing enhanced matches.`);
+
+  for (const fixture of fixturesToProcess) {
+    // tacticalMatchup is guaranteed by the inner join
+    const tacticalMatchup = fixture.tactical_matchups;
     
     // Get team stats
     const { data: homeTeamStats, error: homeStatsError } = await supabase
@@ -481,7 +523,7 @@ async function updateEnhancedMatches() {
       .maybeSingle();
     
     if (homeStatsError || awayStatsError) {
-      console.error(`Error fetching team stats for fixture ID: ${fixture.id}`);
+      console.error(`Error fetching team stats for fixture ID ${fixture.id}: ${homeStatsError?.message || awayStatsError?.message}`);
       continue;
     }
     
@@ -498,7 +540,7 @@ async function updateEnhancedMatches() {
     
     // Determine result if match is finished
     let result = null;
-    if (fixture.status === 'FT' || fixture.status === 'AET' || fixture.status === 'PEN') {
+    if (['FT', 'AET', 'PEN'].includes(fixture.status)) {
       if (fixture.home_score > fixture.away_score) {
         result = 1;  // Home win
       } else if (fixture.home_score < fixture.away_score) {
@@ -535,7 +577,7 @@ async function updateEnhancedMatches() {
       });
     
     if (insertError) {
-      console.error(`Error inserting enhanced match: ${insertError.message}`);
+      console.error(`Error inserting enhanced match for fixture ${fixture.id}: ${insertError.message}`);
     } else {
       console.log(`Added enhanced match for fixture ID: ${fixture.id}`);
     }
@@ -545,30 +587,26 @@ async function updateEnhancedMatches() {
 async function makePredictions() {
   console.log("Making predictions for upcoming fixtures...");
   
-  // Get upcoming fixtures (status = NS for Not Started)
+  // Get upcoming fixtures (status = NS for Not Started) that have enhanced matches
   const { data: upcomingFixtures, error: fixturesError } = await supabase
     .from("fixtures")
     .select(`
       id,
-      enhanced_matches(*)
-    `)
+      enhanced_matches!inner(*)
+    `) // Use inner join
     .eq("status", "NS")
-    .not("enhanced_matches", "is", null);
+    .not("enhanced_matches", "is", null); // Redundant but safe
   
   if (fixturesError) {
-    console.error(`Error fetching upcoming fixtures: ${fixturesError.message}`);
+    console.error(`Error fetching upcoming fixtures for prediction: ${fixturesError.message}`);
     return;
   }
-  
+  console.log(`Found ${upcomingFixtures.length} upcoming fixtures with enhanced data for prediction.`);
+
   for (const fixture of upcomingFixtures) {
-    if (!fixture.enhanced_matches || fixture.enhanced_matches.length === 0) {
-      console.log(`Missing enhanced match data for fixture ID: ${fixture.id}`);
-      continue;
-    }
+    const enhancedMatch = fixture.enhanced_matches;
     
-    const enhancedMatch = fixture.enhanced_matches[0];
-    
-    // Prepare features for prediction
+    // Prepare features for prediction (ensure they are numbers)
     const features = [
       enhancedMatch.cosine_similarity,
       enhancedMatch.euclidean_distance,
@@ -588,7 +626,7 @@ async function makePredictions() {
       enhancedMatch.away_goals_conceded,
       enhancedMatch.home_ppg,
       enhancedMatch.away_ppg
-    ];
+    ].map(Number);
     
     // In a real implementation, we would load the model and make a prediction
     // For this demo, we'll use a simple heuristic
@@ -599,7 +637,6 @@ async function makePredictions() {
     // Base probabilities on team strength
     const baseHomeProb = 0.4 + (enhancedMatch.ppg_difference * 0.1) + (enhancedMatch.elo_difference * 0.0001) + homeAdvantage;
     const baseAwayProb = 0.4 - (enhancedMatch.ppg_difference * 0.1) - (enhancedMatch.elo_difference * 0.0001) - homeAdvantage;
-    const baseDraw = 1 - baseHomeProb - baseAwayProb;
     
     // Adjust based on tactical matchups
     const tacticalFactor = (
@@ -630,16 +667,25 @@ async function makePredictions() {
       predictedResult = 0; // Draw
     }
     
+    const predictionData = {
+      fixture_id: fixture.id,
+      model_name: "catboost", // Keeping original model name for consistency
+      home_win_probability: homeWinProb,
+      draw_probability: drawProb,
+      away_win_probability: awayWinProb,
+      predicted_result: predictedResult
+    };
+
     // Check if prediction already exists
-    const { data: existingPrediction, error: predictionError } = await supabase
+    const { data: existingPrediction, error: predictionCheckError } = await supabase
       .from("predictions")
-      .select("*")
+      .select("id") // Only select id
       .eq("fixture_id", fixture.id)
       .eq("model_name", "catboost")
       .maybeSingle();
     
-    if (predictionError) {
-      console.error(`Error checking for existing prediction: ${predictionError.message}`);
+    if (predictionCheckError) {
+      console.error(`Error checking for existing prediction for fixture ${fixture.id}: ${predictionCheckError.message}`);
       continue;
     }
     
@@ -647,17 +693,10 @@ async function makePredictions() {
       // Insert prediction into database
       const { error: insertError } = await supabase
         .from("predictions")
-        .insert({
-          fixture_id: fixture.id,
-          model_name: "catboost",
-          home_win_probability: homeWinProb,
-          draw_probability: drawProb,
-          away_win_probability: awayWinProb,
-          predicted_result: predictedResult
-        });
+        .insert(predictionData);
       
       if (insertError) {
-        console.error(`Error inserting prediction: ${insertError.message}`);
+        console.error(`Error inserting prediction for fixture ${fixture.id}: ${insertError.message}`);
       } else {
         console.log(`Added prediction for fixture ID: ${fixture.id}`);
       }
@@ -665,17 +704,12 @@ async function makePredictions() {
       // Update prediction
       const { error: updateError } = await supabase
         .from("predictions")
-        .update({
-          home_win_probability: homeWinProb,
-          draw_probability: drawProb,
-          away_win_probability: awayWinProb,
-          predicted_result: predictedResult
-        })
+        .update(predictionData)
         .eq("fixture_id", fixture.id)
         .eq("model_name", "catboost");
       
       if (updateError) {
-        console.error(`Error updating prediction: ${updateError.message}`);
+        console.error(`Error updating prediction for fixture ${fixture.id}: ${updateError.message}`);
       } else {
         console.log(`Updated prediction for fixture ID: ${fixture.id}`);
       }
@@ -728,3 +762,4 @@ serve(async (req) => {
     { status: 405, headers: { 'Content-Type': 'application/json' } },
   )
 })
+
