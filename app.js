@@ -314,7 +314,7 @@ async function loadUpcomingMatches() {
                 away_team:away_team_id(id, name, logo_url),
                 league_id,
                 leagues(name),
-                predictions(home_win_probability, draw_probability, away_win_probability, predicted_result)
+                predictions(home_win_probability, draw_probability, away_win_probability, predicted_outcome)
             `)
             .eq('status', 'NS') // Not Started
             .gte('match_date', todayStr)
@@ -367,18 +367,19 @@ async function loadUpcomingMatches() {
                 const drawProb = Math.round(prediction.draw_probability * 100);
                 const awayWinProb = Math.round(prediction.away_win_probability * 100);
                 
-                let resultText = '';
+                let resultText = prediction.predicted_outcome; // Use the text outcome directly
                 let resultClass = '';
                 
-                if (prediction.predicted_result === 1) {
-                    resultText = 'Home Win';
+                // Set class based on the text outcome
+                if (resultText === 'Home Win') {
                     resultClass = 'text-primary';
-                } else if (prediction.predicted_result === 0) {
-                    resultText = 'Draw';
+                } else if (resultText === 'Draw') {
                     resultClass = 'text-secondary';
-                } else {
-                    resultText = 'Away Win';
+                } else if (resultText === 'Away Win') {
                     resultClass = 'text-danger';
+                } else { // Handle potential null or unexpected values
+                    resultText = 'N/A'; 
+                    resultClass = 'text-muted';
                 }
                 
                 predictionHtml = `
