@@ -464,7 +464,7 @@ async function handleCustomPrediction(e) {
             throw new Error('Home and away teams cannot be the same.');
         }
         
-        // Show loading state
+        // Show loading state and make container visible
         predictionResultContainer.innerHTML = `
             <div class="loading mt-4">
                 <div class="spinner-border text-success" role="status">
@@ -473,6 +473,7 @@ async function handleCustomPrediction(e) {
                 <div class="mt-2">Generating prediction...</div>
             </div>
         `;
+        predictionResultContainer.style.display = 'block'; // Make visible for loading
         
         // Get team data
         const homeTeam = allTeams.find(team => team.id.toString() === homeTeamId);
@@ -575,6 +576,9 @@ async function handleCustomPrediction(e) {
         // Render prediction result
         predictionResultContainer.innerHTML = generatedHtmlString;
 
+        // Make container visible
+        predictionResultContainer.style.display = 'block'; 
+
         // DEBUG: Log the container's innerHTML immediately after setting it
         console.log("Container innerHTML after set:", predictionResultContainer.innerHTML);
 
@@ -585,6 +589,8 @@ async function handleCustomPrediction(e) {
                 <i class="bi bi-exclamation-triangle"></i> ${error.message || "Error generating prediction. Please try again."}
             </div>
         `;
+        // Make container visible to show error
+        predictionResultContainer.style.display = 'block'; 
     }
 }
 
