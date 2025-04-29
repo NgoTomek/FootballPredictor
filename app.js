@@ -329,6 +329,9 @@ async function loadUpcomingMatches() {
         // Execute query
         const { data: fixtures, error } = await query;
         
+        // Add this line for debugging:
+        console.log("Upcoming Fixture IDs:", fixtures ? fixtures.map(f => f.id) : 'No fixtures found');
+        
         if (error) throw error;
         
         // Check if we have fixtures
