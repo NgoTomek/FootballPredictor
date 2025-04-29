@@ -1,4 +1,4 @@
-// Supabase Edge Function for scheduled data collection - Optimized for Single League Processing
+// Supabase Edge Function for scheduled data collection - Optimized for Single League Processing + Predictions Enabled
 // This file should be deployed to your Supabase project as an Edge Function
 
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
@@ -360,13 +360,195 @@ async function fetchAndStoreTeamStats(league) {
   }
 }
 
-// --- Tactical Matchups, Enhanced Matches, Predictions (Keep existing functions, but they might need similar league filtering if run) ---
-// NOTE: These are kept separate for now as they depend on managers/vectors which are not yet populated.
-// If these were to be run, they would also need modification to filter by league or run separately.
+// --- Tactical Matchups (Still requires manager/vector data) ---
+async function updateTacticalMatchups(league) { 
+    // This function would need significant work to fetch manager data,
+    // calculate/fetch tactical vectors, and filter by league.
+    // Keeping it commented out for now.
+    console.log(`Skipping tactical matchups for league ${league.name} (Not Implemented)`);
+}
 
-async function updateTacticalMatchups() { /* ... existing code ... */ }
-async function updateEnhancedMatches() { /* ... existing code ... */ }
-async function makePredictions() { /* ... existing code ... */ }
+// --- Enhanced Matches (Enabled, but without tactical data) ---
+async function updateEnhancedMatches(league) {
+  if (!league || typeof league !== 'object' || !league.id) {
+      console.error("Invalid league object passed to updateEnhancedMatches:", league);
+      return;
+  }
+  console.log(`Updating enhanced match data for league: ${league.name}...`);
+
+  // 1. Get IDs of fixtures in this league that already have enhanced data
+  const { data: existingEnhancedFixtureIdsData, error: existingEnhancedError } = await supabase
+    .from("enhanced_matches")
+    .select("fixture_id")
+    .in("fixture_id", supabase.from("fixtures").select("id").eq("league_id", league.id)); // Filter by league
+
+  if (existingEnhancedError) {
+    console.error(`Error fetching existing enhanced match fixture IDs for league ${league.id}: ${existingEnhancedError.message}`);
+    return;
+  }
+  const existingEnhancedFixtureIds = existingEnhancedFixtureIdsData.map(item => item.fixture_id);
+  console.log(`Found ${existingEnhancedFixtureIds.length} existing enhanced matches for league ${league.name}.`);
+
+  // 2. Get fixtures in this league that DO NOT have enhanced data yet
+  let query = supabase
+    .from("fixtures")
+    .select("*, home_team_id(id, name), away_team_id(id, name)") // Fetch related team data
+    .eq("league_id", league.id); // Filter by league
+
+  if (existingEnhancedFixtureIds.length > 0) {
+    query = query.not("id", "in", `(${existingEnhancedFixtureIds.join(',')})`);
+  }
+
+  const { data: fixturesToProcess, error: fixturesError } = await query;
+
+  if (fixturesError) {
+    console.error(`Error fetching fixtures needing enhanced data for league ${league.id}: ${fixturesError.message}`);
+    return;
+  }
+  console.log(`Found ${fixturesToProcess.length} fixtures needing enhanced data for league ${league.name}.`);
+
+  for (const fixture of fixturesToProcess) {
+    // Fetch related data (team stats)
+    const { data: homeStats, error: homeStatsError } = await supabase
+      .from("team_stats")
+      .select("*")
+      .eq("team_id", fixture.home_team_id.id)
+      .eq("season", CURRENT_SEASON)
+      .maybeSingle();
+
+    const { data: awayStats, error: awayStatsError } = await supabase
+      .from("team_stats")
+      .select("*")
+      .eq("team_id", fixture.away_team_id.id)
+      .eq("season", CURRENT_SEASON)
+      .maybeSingle();
+
+    // Tactical matchup data is skipped for now
+    // const { data: tacticalMatchup, error: tacticalMatchupError } = await supabase
+    //   .from("tactical_matchups")
+    //   .select("*")
+    //   .eq("fixture_id", fixture.id)
+    //   .maybeSingle();
+
+    if (homeStatsError || awayStatsError /*|| tacticalMatchupError*/) {
+      console.error(`Error fetching related stats for enhanced match ${fixture.id}: ${homeStatsError?.message || awayStatsError?.message /*|| tacticalMatchupError?.message*/}`);
+      continue;
+    }
+
+    if (!homeStats || !awayStats /*|| !tacticalMatchup*/) {
+      console.log(`Missing team stats for enhanced match ${fixture.id}. Skipping.`);
+      continue;
+    }
+
+    // Combine data into enhanced_matches format (without tactical data)
+    const enhancedData = {
+      fixture_id: fixture.id,
+      home_team_elo: homeStats.elo_rating,
+      away_team_elo: awayStats.elo_rating,
+      home_ppg: homeStats.points_per_game,
+      away_ppg: awayStats.points_per_game,
+      // Tactical fields are omitted
+      // cosine_similarity: tacticalMatchup.cosine_similarity,
+      // pressing_mismatch: tacticalMatchup.pressing_mismatch,
+      match_date: fixture.match_date,
+      status: fixture.status
+    };
+
+    const { error: upsertError } = await supabase.from("enhanced_matches").upsert(enhancedData, { onConflict: 'fixture_id' });
+    if (upsertError) {
+      console.error(`Error upserting enhanced match data for fixture ${fixture.id}: ${upsertError.message}`);
+    } else {
+      console.log(`Processed enhanced match data for fixture ${fixture.id}`);
+    }
+    await new Promise(resolve => setTimeout(resolve, 50)); // Shorter delay ok
+  }
+}
+
+// --- Predictions (Enabled, uses enhanced data) ---
+async function makePredictions(league) {
+  if (!league || typeof league !== 'object' || !league.id) {
+      console.error("Invalid league object passed to makePredictions:", league);
+      return;
+  }
+  console.log(`Making predictions for upcoming matches in league: ${league.name}...`);
+
+  // Fetch enhanced match data for fixtures in this league that are 'Not Started' (NS)
+  const { data: upcomingMatches, error: fetchError } = await supabase
+    .from("enhanced_matches")
+    .select("*, fixture_id!inner(id, api_id, league_id, home_team_id(name), away_team_id(name))") // Use inner join to filter by league
+    .eq("status", "NS") // Filter for 'Not Started' matches
+    .eq("fixture_id.league_id", league.id); // Filter by league ID
+
+  if (fetchError) {
+    console.error(`Error fetching upcoming matches for prediction in league ${league.id}: ${fetchError.message}`);
+    return;
+  }
+
+  if (!upcomingMatches || upcomingMatches.length === 0) {
+    console.log(`No upcoming matches found needing prediction for league ${league.name}.`);
+    return;
+  }
+
+  console.log(`Found ${upcomingMatches.length} upcoming matches to predict for league ${league.name}.`);
+
+  for (const match of upcomingMatches) {
+    // Simple Elo-based prediction (as before)
+    const homeElo = match.home_team_elo || 1500;
+    const awayElo = match.away_team_elo || 1500;
+    const eloDiff = homeElo - awayElo;
+    
+    let predictedOutcome = "Draw";
+    let homeWinProb = 0.33;
+    let drawProb = 0.34;
+    let awayWinProb = 0.33;
+
+    const probShift = Math.min(Math.abs(eloDiff) / 400 * 0.3, 0.3); 
+    if (eloDiff > 50) { 
+        predictedOutcome = "Home Win";
+        homeWinProb += probShift;
+        awayWinProb -= probShift / 2;
+        drawProb -= probShift / 2;
+    } else if (eloDiff < -50) { 
+        predictedOutcome = "Away Win";
+        awayWinProb += probShift;
+        homeWinProb -= probShift / 2;
+        drawProb -= probShift / 2;
+    }
+    
+    const totalProb = homeWinProb + drawProb + awayWinProb;
+    homeWinProb = Math.max(0, homeWinProb / totalProb); // Ensure non-negative
+    drawProb = Math.max(0, drawProb / totalProb);
+    awayWinProb = Math.max(0, awayWinProb / totalProb);
+    // Re-normalize if needed after ensuring non-negative
+    const finalTotalProb = homeWinProb + drawProb + awayWinProb;
+    if (finalTotalProb > 0) {
+        homeWinProb /= finalTotalProb;
+        drawProb /= finalTotalProb;
+        awayWinProb /= finalTotalProb;
+    }
+
+    const predictionData = {
+      fixture_id: match.fixture_id.id,
+      predicted_outcome: predictedOutcome,
+      home_win_probability: homeWinProb,
+      draw_probability: drawProb,
+      away_win_probability: awayWinProb,
+      prediction_date: new Date().toISOString()
+    };
+
+    // Upsert prediction into the database
+    const { error: upsertError } = await supabase
+      .from("predictions")
+      .upsert(predictionData, { onConflict: 'fixture_id' }); // Update if prediction for this fixture already exists
+
+    if (upsertError) {
+      console.error(`Error saving prediction for fixture ${match.fixture_id.id}: ${upsertError.message}`);
+    } else {
+      console.log(`Prediction saved for fixture ${match.fixture_id.id}: ${match.fixture_id.home_team_id.name} vs ${match.fixture_id.away_team_id.name} -> ${predictedOutcome}`);
+    }
+    await new Promise(resolve => setTimeout(resolve, 50)); // Shorter delay ok
+  }
+}
 
 // Main function handler - Modified to accept league_api_id
 serve(async (req) => {
@@ -377,7 +559,7 @@ serve(async (req) => {
     leagueApiId = requestBody?.league_api_id ? parseInt(requestBody.league_api_id) : null;
   } catch (e) {
     // Ignore errors if body is empty or not JSON
-    console.log("No valid league_api_id found in request body, proceeding without specific league filter.");
+    console.log("No valid league_api_id found in request body.");
   }
 
   if (!leagueApiId || !Object.values(LEAGUE_IDS).includes(leagueApiId)) {
@@ -409,11 +591,14 @@ serve(async (req) => {
     // 4. Fetch and store team statistics for this specific league
     await fetchAndStoreTeamStats(league);
 
-    // NOTE: Tactical/Enhanced/Prediction steps are still commented out
-    // They would need similar league-specific logic or separate processing
-    // await updateTacticalMatchups(); 
-    // await updateEnhancedMatches(); 
-    // await makePredictions(); 
+    // 5. Update enhanced matches (using stats, omitting tactical for now)
+    await updateEnhancedMatches(league); 
+
+    // 6. Make predictions (using enhanced matches)
+    await makePredictions(league); 
+
+    // NOTE: Tactical step is still commented out
+    // await updateTacticalMatchups(league); 
 
     console.log(`Data collection process completed successfully for league API ID: ${leagueApiId}!`);
     return new Response(
