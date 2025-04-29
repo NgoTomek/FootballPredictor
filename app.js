@@ -575,6 +575,9 @@ async function handleCustomPrediction(e) {
         // Render prediction result
         predictionResultContainer.innerHTML = generatedHtmlString;
 
+        // DEBUG: Log the container's innerHTML immediately after setting it
+        console.log("Container innerHTML after set:", predictionResultContainer.innerHTML);
+
     } catch (error) {
         console.error("Error generating prediction:", error);
         predictionResultContainer.innerHTML = `
