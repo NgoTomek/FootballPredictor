@@ -95,7 +95,7 @@ async function ensureLeagueExists(leagueApiId) {
   // Check if league already exists
   const { data: existingLeague, error: checkError } = await supabase
     .from("leagues")
-    .select("id, name") // Select ID and name
+    .select("id, name, api_id") // Select api_id as well
     .eq("api_id", leagueApiId)
     .maybeSingle();
 
@@ -108,7 +108,7 @@ async function ensureLeagueExists(leagueApiId) {
     const { data: insertedLeague, error: insertError } = await supabase
       .from("leagues")
       .insert({ name: leagueName, api_id: leagueApiId })
-      .select("id, name") // Select ID and name after insert
+      .select("id, name, api_id") // Select api_id as well
       .single();
 
     if (insertError) {
@@ -126,9 +126,10 @@ async function ensureLeagueExists(leagueApiId) {
 
 // Modified to fetch teams only for the specified league
 async function fetchAndStoreTeams(league) {
-  if (!league || !league.api_id || !league.id) {
-      console.error("Invalid league object passed to fetchAndStoreTeams");
-      return;
+  // **FIX:** Check if league object is valid and contains id and api_id
+  if (!league || typeof league !== 'object' || !league.id || !league.api_id) {
+      console.error("Invalid league object passed to fetchAndStoreTeams:", league);
+      return; // Stop execution for this step if league object is invalid
   }
   console.log(`Fetching and storing team information for league: ${league.name} (API ID: ${league.api_id})...`);
   
@@ -193,9 +194,10 @@ async function fetchAndStoreTeams(league) {
 
 // Modified to fetch fixtures only for the specified league
 async function fetchAndStoreFixtures(league) {
-  if (!league || !league.api_id || !league.id) {
-      console.error("Invalid league object passed to fetchAndStoreFixtures");
-      return;
+  // **FIX:** Check if league object is valid and contains id and api_id
+  if (!league || typeof league !== 'object' || !league.id || !league.api_id) {
+      console.error("Invalid league object passed to fetchAndStoreFixtures:", league);
+      return; // Stop execution for this step if league object is invalid
   }
   console.log(`Fetching and storing fixture information for league: ${league.name} (API ID: ${league.api_id})...`);
   
@@ -288,9 +290,10 @@ async function fetchAndStoreFixtures(league) {
 
 // Modified to fetch stats only for teams in the specified league
 async function fetchAndStoreTeamStats(league) {
-   if (!league || !league.api_id || !league.id) {
-      console.error("Invalid league object passed to fetchAndStoreTeamStats");
-      return;
+   // **FIX:** Check if league object is valid and contains id and api_id
+   if (!league || typeof league !== 'object' || !league.id || !league.api_id) {
+      console.error("Invalid league object passed to fetchAndStoreTeamStats:", league);
+      return; // Stop execution for this step if league object is invalid
   }
   console.log(`Fetching and storing team statistics for league: ${league.name} (API ID: ${league.api_id})...`);
   
@@ -390,7 +393,10 @@ serve(async (req) => {
 
     // 1. Ensure the specified league exists in the DB and get its internal ID
     const league = await ensureLeagueExists(leagueApiId);
-    if (!league) {
+    // **FIX:** Check if league object is valid before proceeding
+    if (!league || typeof league !== 'object' || !league.id || !league.api_id) {
+        // Log the actual value received
+        console.error("Failed to get valid league object from ensureLeagueExists:", league);
         throw new Error(`Failed to ensure league ${leagueApiId} exists in the database.`);
     }
 
