@@ -578,3 +578,62 @@ async function handleCustomPrediction(e) {
     }
 }
 
+
+        // Render prediction result
+        const generatedHtmlString = `
+            <div class="card prediction-card mt-4">
+                <div class="card-body">
+                    <h4 class="card-title">Match Prediction</h4>
+                    <div class="row align-items-center mb-3">
+                        <div class="col-4 text-center">
+                            <img src="${homeTeam.logo_url || "https://via.placeholder.com/50"}" alt="${homeTeam.name}" class="team-logo mb-2">
+                            <h6 class="mb-0">${homeTeam.name}</h6>
+                        </div>
+                        <div class="col-4 text-center">
+                            <div class="vs-badge">VS</div>
+                        </div>
+                        <div class="col-4 text-center">
+                            <img src="${awayTeam.logo_url || "https://via.placeholder.com/50"}" alt="${awayTeam.name}" class="team-logo mb-2">
+                            <h6 class="mb-0">${awayTeam.name}</h6>
+                        </div>
+                    </div>
+                    
+                    <div class="mt-4">
+                        <h5>Predicted Result: <span class="${resultClass}">${resultText}</span></h5>
+                        <div class="progress mb-2" style="height: 25px;">
+                            <div class="progress-bar progress-bar-home" role="progressbar" style="width: ${homeWinProb}%" title="Home Win: ${homeWinProb}%">
+                                ${homeWinProb}%
+                            </div>
+                            <div class="progress-bar progress-bar-draw" role="progressbar" style="width: ${drawProb}%" title="Draw: ${drawProb}%">
+                                ${drawProb}%
+                            </div>
+                            <div class="progress-bar progress-bar-away" role="progressbar" style="width: ${awayWinProb}%" title="Away Win: ${awayWinProb}%">
+                                ${awayWinProb}%
+                            </div>
+                        </div>
+                        <div class="d-flex justify-content-between">
+                            <span>${homeTeam.name} Win</span>
+                            <span>Draw</span>
+                            <span>${awayTeam.name} Win</span>
+                        </div>
+                    </div>
+                    
+                    <!-- Removed Key Factors section as the simplified function doesn't provide this -->
+                </div>
+            </div>
+        `;
+
+        // DEBUG: Log the generated HTML string
+        console.log("Generated HTML:", generatedHtmlString);
+
+        predictionResultContainer.innerHTML = generatedHtmlString;
+    } catch (error) {
+        console.error("Error generating prediction:", error);
+        predictionResultContainer.innerHTML = `
+            <div class="alert alert-danger mt-4">
+                <i class="bi bi-exclamation-triangle"></i> ${error.message || "Error generating prediction. Please try again."}
+            </div>
+        `;
+    }
+}
+
