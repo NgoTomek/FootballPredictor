@@ -488,8 +488,8 @@ async function handleCustomPrediction(e) {
         // Call prediction API
         const { data: prediction, error } = await supabase
             .rpc('predict_match', {
-                home_team_id: parseInt(homeTeamId),
-                away_team_id: parseInt(awayTeamId)
+                p_home_team_id: parseInt(homeTeamId),
+                p_away_team_id: parseInt(awayTeamId)
             });
         
         if (error) throw error;
