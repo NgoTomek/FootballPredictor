@@ -27,7 +27,7 @@ const LEAGUE_IDS = {
 };
 
 // Current season
-const CURRENT_SEASON = "2024-2025";
+const CURRENT_SEASON = 2024;
 
 async function logApiCall(endpoint, parameters, statusCode, responseSize, executionTime) {
   try {
