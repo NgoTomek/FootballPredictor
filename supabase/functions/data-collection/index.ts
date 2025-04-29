@@ -1,4 +1,4 @@
-// Supabase Edge Function for scheduled data collection - Optimized + Tactical Data + Enhanced Predictions v3 (TypeError Fix)
+// Supabase Edge Function for scheduled data collection - Optimized + Tactical Data + Enhanced Predictions v4 (Debug Logging)
 // This file should be deployed to your Supabase project as an Edge Function
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
@@ -428,9 +428,14 @@ async function updateEnhancedMatches(league) {
   }
 
   // Process each fixture
+  let processedCount = 0; // **DEBUG:** Add counter
   for (const fixture of fixturesToProcess) {
     try { // Add try-catch around the loop body for individual fixture errors
-        console.log(`Processing enhanced data for fixture ID: ${fixture.id}`);
+        // **DEBUG:** Log progress every 50 fixtures
+        if (processedCount % 50 === 0) {
+            console.log(`Processing enhanced data for fixture ${processedCount + 1}/${fixturesToProcess.length} (ID: ${fixture.id})...`);
+        }
+
         // Fetch related data (team stats)
         const { data: homeStats, error: homeStatsError } = await supabase
           .from("team_stats")
@@ -470,6 +475,7 @@ async function updateEnhancedMatches(league) {
           // Only continue if stats are missing, as they are crucial
           if (!homeStats || !awayStats) {
               console.log(`Missing crucial team stats for enhanced match ${fixture.id}. Skipping.`);
+              processedCount++; // **DEBUG:** Increment counter even if skipped
               continue;
           }
         }
@@ -498,6 +504,7 @@ async function updateEnhancedMatches(league) {
                 pressingMismatch = 0;
             }
         } else {
+            // Use console.warn for non-fatal issues
             console.warn(`Missing tactical vectors for one or both teams in fixture ${fixture.id}. Using default tactical metrics (0).`);
             // Default values are already set
         }
@@ -519,14 +526,17 @@ async function updateEnhancedMatches(league) {
         if (upsertError) {
           console.error(`Error upserting enhanced match data for fixture ${fixture.id}: ${upsertError.message}`);
         } else {
-          console.log(`Processed enhanced match data (Tactics: ${homeVectors && awayVectors ? 'Yes' : 'No'}) for fixture ${fixture.id}`);
+          // **DEBUG:** Log successful processing, maybe less frequently?
+          // console.log(`Processed enhanced match data (Tactics: ${homeVectors && awayVectors ? 'Yes' : 'No'}) for fixture ${fixture.id}`);
         }
     } catch (loopError) {
         console.error(`Caught error processing fixture ID ${fixture.id} in updateEnhancedMatches loop: ${loopError.message}`);
         // Continue to the next fixture
     }
+    processedCount++; // **DEBUG:** Increment counter
     await new Promise((resolve) => setTimeout(resolve, 50)); // Shorter delay ok
   }
+  console.log(`Finished processing ${processedCount} enhanced matches for league ${league.name}.`); // **DEBUG:** Log completion
 }
 
 // --- Predictions (Now uses enhanced data with tactical metrics) ---
@@ -573,8 +583,14 @@ async function makePredictions(league) {
 
   console.log(`Found ${upcomingMatches.length} upcoming matches with enhanced data to predict for league ${league.name}.`);
 
+  let predictedCount = 0; // **DEBUG:** Add counter
   for (const match of upcomingMatches) {
     try { // Add try-catch around the loop body
+        // **DEBUG:** Log progress every 50 predictions
+        if (predictedCount % 50 === 0) {
+            console.log(`Processing prediction ${predictedCount + 1}/${upcomingMatches.length} (Fixture ID: ${match.fixture_id.id})...`);
+        }
+
         // Enhanced prediction using Elo and tactical metrics
         const homeElo = match.home_team_elo || 1500;
         const awayElo = match.away_team_elo || 1500;
@@ -649,16 +665,19 @@ async function makePredictions(league) {
         if (upsertError) {
           console.error(`Error saving prediction for fixture ${match.fixture_id.id}: ${upsertError.message}`);
         } else {
-          console.log(
-            `Prediction saved for fixture ${match.fixture_id.id}: ${match.fixture_id.home_team_id.name} vs ${match.fixture_id.away_team_id.name} -> ${predictedOutcome} (H: ${homeWinProb.toFixed(3)}, D: ${drawProb.toFixed(3)}, A: ${awayWinProb.toFixed(3)})`
-          );
+          // **DEBUG:** Log successful prediction, maybe less frequently?
+          // console.log(
+          //   `Prediction saved for fixture ${match.fixture_id.id}: ${match.fixture_id.home_team_id.name} vs ${match.fixture_id.away_team_id.name} -> ${predictedOutcome} (H: ${homeWinProb.toFixed(3)}, D: ${drawProb.toFixed(3)}, A: ${awayWinProb.toFixed(3)})`
+          // );
         }
     } catch (loopError) {
         console.error(`Caught error processing prediction for fixture ID ${match.fixture_id?.id} in makePredictions loop: ${loopError.message}`);
         // Continue to the next prediction
     }
+    predictedCount++; // **DEBUG:** Increment counter
     await new Promise((resolve) => setTimeout(resolve, 50)); // Shorter delay ok
   }
+  console.log(`Finished processing ${predictedCount} predictions for league ${league.name}.`); // **DEBUG:** Log completion
 }
 
 // Main function handler - Modified to accept league_api_id
@@ -685,7 +704,9 @@ serve(async (req) => {
     console.log(`Data collection process started for league API ID: ${leagueApiId}...`);
 
     // 1. Ensure the specified league exists in the DB and get its internal ID
+    console.time("ensureLeagueExists"); // **DEBUG:** Start timer
     const league = await ensureLeagueExists(leagueApiId);
+    console.timeEnd("ensureLeagueExists"); // **DEBUG:** End timer
     // **FIX:** Check if league object is valid before proceeding
     if (!league || typeof league !== "object" || !league.id || !league.api_id) {
       // Log the actual value received
@@ -694,19 +715,29 @@ serve(async (req) => {
     }
 
     // 2. Fetch and store teams for this specific league
+    console.time("fetchAndStoreTeams"); // **DEBUG:** Start timer
     await fetchAndStoreTeams(league);
+    console.timeEnd("fetchAndStoreTeams"); // **DEBUG:** End timer
 
     // 3. Fetch and store fixtures for this specific league
+    console.time("fetchAndStoreFixtures"); // **DEBUG:** Start timer
     await fetchAndStoreFixtures(league);
+    console.timeEnd("fetchAndStoreFixtures"); // **DEBUG:** End timer
 
     // 4. Fetch and store team statistics for this specific league
+    console.time("fetchAndStoreTeamStats"); // **DEBUG:** Start timer
     await fetchAndStoreTeamStats(league);
+    console.timeEnd("fetchAndStoreTeamStats"); // **DEBUG:** End timer
 
     // 5. Update enhanced matches (using stats AND tactical data)
+    console.time("updateEnhancedMatches"); // **DEBUG:** Start timer
     await updateEnhancedMatches(league);
+    console.timeEnd("updateEnhancedMatches"); // **DEBUG:** End timer
 
     // 6. Make predictions (using enhanced matches with tactical data)
+    console.time("makePredictions"); // **DEBUG:** Start timer
     await makePredictions(league);
+    console.timeEnd("makePredictions"); // **DEBUG:** End timer
 
     console.log(`Data collection process completed successfully for league API ID: ${leagueApiId}!`);
     return new Response(JSON.stringify({ message: `Data collection process completed successfully for league API ID: ${leagueApiId}!` }), {
