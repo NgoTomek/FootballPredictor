@@ -1,4 +1,4 @@
-// Supabase Edge Function for scheduled data collection - Optimized + Tactical Data + Enhanced Predictions v2 (Error Handling)
+// Supabase Edge Function for scheduled data collection - Optimized + Tactical Data + Enhanced Predictions v3 (TypeError Fix)
 // This file should be deployed to your Supabase project as an Edge Function
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
@@ -371,7 +371,7 @@ async function fetchAndStoreTeamStats(league) {
   }
 }
 
-// --- Enhanced Matches (Now includes tactical data with error handling) ---
+// --- Enhanced Matches (Fix for .in() filter TypeError) ---
 async function updateEnhancedMatches(league) {
   if (!league || typeof league !== "object" || !league.id) {
     console.error("Invalid league object passed to updateEnhancedMatches:", league);
@@ -379,11 +379,27 @@ async function updateEnhancedMatches(league) {
   }
   console.log(`Updating enhanced match data for league: ${league.name}...`);
 
-  // 1. Get IDs of fixtures in this league that already have enhanced data
+  // **FIX:** Step 1: Get all fixture IDs for the league first
+  const { data: leagueFixtureIdsData, error: leagueFixtureIdsError } = await supabase
+    .from("fixtures")
+    .select("id")
+    .eq("league_id", league.id);
+
+  if (leagueFixtureIdsError) {
+    console.error(`Error fetching fixture IDs for league ${league.id}: ${leagueFixtureIdsError.message}`);
+    return;
+  }
+  const leagueFixtureIds = leagueFixtureIdsData.map((item) => item.id);
+  if (leagueFixtureIds.length === 0) {
+      console.log(`No fixtures found in DB for league ${league.name} to enhance.`);
+      return;
+  }
+
+  // **FIX:** Step 2: Get IDs of fixtures in this league that *already* have enhanced data, using the fetched IDs
   const { data: existingEnhancedFixtureIdsData, error: existingEnhancedError } = await supabase
     .from("enhanced_matches")
     .select("fixture_id")
-    .in("fixture_id", supabase.from("fixtures").select("id").eq("league_id", league.id)); // Filter by league
+    .in("fixture_id", leagueFixtureIds); // Use the array of IDs
 
   if (existingEnhancedError) {
     console.error(`Error fetching existing enhanced match fixture IDs for league ${league.id}: ${existingEnhancedError.message}`);
@@ -392,114 +408,122 @@ async function updateEnhancedMatches(league) {
   const existingEnhancedFixtureIds = existingEnhancedFixtureIdsData.map((item) => item.fixture_id);
   console.log(`Found ${existingEnhancedFixtureIds.length} existing enhanced matches for league ${league.name}.`);
 
-  // 2. Get fixtures in this league that DO NOT have enhanced data yet
-  let query = supabase
+  // **FIX:** Step 3: Determine which fixture IDs from the league *need* processing
+  const fixturesToProcessIds = leagueFixtureIds.filter(id => !existingEnhancedFixtureIds.includes(id));
+  if (fixturesToProcessIds.length === 0) {
+      console.log(`All fixtures for league ${league.name} already have enhanced data.`);
+      return;
+  }
+  console.log(`Found ${fixturesToProcessIds.length} fixtures needing enhanced data for league ${league.name}.`);
+
+  // **FIX:** Step 4: Fetch the full fixture data only for those needing processing
+  const { data: fixturesToProcess, error: fixturesError } = await supabase
     .from("fixtures")
     .select("*, home_team_id(id, name), away_team_id(id, name)") // Fetch related team data
-    .eq("league_id", league.id); // Filter by league
-
-  if (existingEnhancedFixtureIds.length > 0) {
-    query = query.not("id", "in", `(${existingEnhancedFixtureIds.join(",")})`);
-  }
-
-  const { data: fixturesToProcess, error: fixturesError } = await query;
+    .in("id", fixturesToProcessIds); // Use the filtered array of IDs
 
   if (fixturesError) {
-    console.error(`Error fetching fixtures needing enhanced data for league ${league.id}: ${fixturesError.message}`);
+    console.error(`Error fetching full fixture data for processing in league ${league.id}: ${fixturesError.message}`);
     return;
   }
-  console.log(`Found ${fixturesToProcess.length} fixtures needing enhanced data for league ${league.name}.`);
 
+  // Process each fixture
   for (const fixture of fixturesToProcess) {
-    // Fetch related data (team stats)
-    const { data: homeStats, error: homeStatsError } = await supabase
-      .from("team_stats")
-      .select("*")
-      .eq("team_id", fixture.home_team_id.id)
-      .eq("season", CURRENT_SEASON)
-      .maybeSingle();
+    try { // Add try-catch around the loop body for individual fixture errors
+        console.log(`Processing enhanced data for fixture ID: ${fixture.id}`);
+        // Fetch related data (team stats)
+        const { data: homeStats, error: homeStatsError } = await supabase
+          .from("team_stats")
+          .select("*")
+          .eq("team_id", fixture.home_team_id.id)
+          .eq("season", CURRENT_SEASON)
+          .maybeSingle();
 
-    const { data: awayStats, error: awayStatsError } = await supabase
-      .from("team_stats")
-      .select("*")
-      .eq("team_id", fixture.away_team_id.id)
-      .eq("season", CURRENT_SEASON)
-      .maybeSingle();
+        const { data: awayStats, error: awayStatsError } = await supabase
+          .from("team_stats")
+          .select("*")
+          .eq("team_id", fixture.away_team_id.id)
+          .eq("season", CURRENT_SEASON)
+          .maybeSingle();
 
-    // Fetch tactical vectors (using team name for lookup)
-    const { data: homeVectors, error: homeVectorsError } = await supabase
-      .from("manager_tactical_vectors")
-      .select("*")
-      .eq("team_name", fixture.home_team_id.name)
-      .eq("season", CURRENT_SEASON)
-      .maybeSingle();
+        // Fetch tactical vectors (using team name for lookup)
+        const { data: homeVectors, error: homeVectorsError } = await supabase
+          .from("manager_tactical_vectors")
+          .select("*")
+          .eq("team_name", fixture.home_team_id.name)
+          .eq("season", CURRENT_SEASON)
+          .maybeSingle();
 
-    const { data: awayVectors, error: awayVectorsError } = await supabase
-      .from("manager_tactical_vectors")
-      .select("*")
-      .eq("team_name", fixture.away_team_id.name)
-      .eq("season", CURRENT_SEASON)
-      .maybeSingle();
+        const { data: awayVectors, error: awayVectorsError } = await supabase
+          .from("manager_tactical_vectors")
+          .select("*")
+          .eq("team_name", fixture.away_team_id.name)
+          .eq("season", CURRENT_SEASON)
+          .maybeSingle();
 
-    if (homeStatsError || awayStatsError || homeVectorsError || awayVectorsError) {
-      // Log specific errors but continue if possible
-      if (homeStatsError) console.error(`Error fetching home stats for fixture ${fixture.id}: ${homeStatsError.message}`);
-      if (awayStatsError) console.error(`Error fetching away stats for fixture ${fixture.id}: ${awayStatsError.message}`);
-      if (homeVectorsError) console.error(`Error fetching home vectors for fixture ${fixture.id}: ${homeVectorsError.message}`);
-      if (awayVectorsError) console.error(`Error fetching away vectors for fixture ${fixture.id}: ${awayVectorsError.message}`);
-      // Only continue if stats are missing, as they are crucial
-      if (!homeStats || !awayStats) {
-          console.log(`Missing crucial team stats for enhanced match ${fixture.id}. Skipping.`);
-          continue;
-      }
-    }
-
-    // Calculate tactical metrics - **FIX: Handle missing vectors**
-    let cosineSimilarity = 0;
-    let pressingMismatch = 0;
-
-    if (homeVectors && awayVectors) {
-        // Define which vector components to use for similarity
-        const vectorKeys = [
-          "pressing_intensity_normalized",
-          "possession_control_normalized",
-          "counter_attack_focus_normalized",
-          "attack_tempo_normalized",
-          "defensive_line_height_normalized",
-        ];
-        try {
-            const homeVec = vectorKeys.map(key => homeVectors[key]);
-            const awayVec = vectorKeys.map(key => awayVectors[key]);
-            cosineSimilarity = calculateCosineSimilarity(homeVec, awayVec);
-            pressingMismatch = Math.abs((homeVectors.pressing_intensity_normalized || 0) - (awayVectors.pressing_intensity_normalized || 0));
-        } catch (e) {
-            console.error(`Error calculating tactical metrics for fixture ${fixture.id}: ${e.message}. Using defaults.`);
-            cosineSimilarity = 0;
-            pressingMismatch = 0;
+        if (homeStatsError || awayStatsError || homeVectorsError || awayVectorsError) {
+          // Log specific errors but continue if possible
+          if (homeStatsError) console.error(`Error fetching home stats for fixture ${fixture.id}: ${homeStatsError.message}`);
+          if (awayStatsError) console.error(`Error fetching away stats for fixture ${fixture.id}: ${awayStatsError.message}`);
+          if (homeVectorsError) console.error(`Error fetching home vectors for fixture ${fixture.id}: ${homeVectorsError.message}`);
+          if (awayVectorsError) console.error(`Error fetching away vectors for fixture ${fixture.id}: ${awayVectorsError.message}`);
+          // Only continue if stats are missing, as they are crucial
+          if (!homeStats || !awayStats) {
+              console.log(`Missing crucial team stats for enhanced match ${fixture.id}. Skipping.`);
+              continue;
+          }
         }
-    } else {
-        console.warn(`Missing tactical vectors for one or both teams in fixture ${fixture.id}. Using default tactical metrics (0).`);
-        // Default values are already set
-    }
 
-    // Combine data into enhanced_matches format
-    const enhancedData = {
-      fixture_id: fixture.id,
-      home_team_elo: homeStats?.elo_rating || 1500, // Use default if stats somehow missing after check
-      away_team_elo: awayStats?.elo_rating || 1500,
-      home_ppg: homeStats?.points_per_game || 0,
-      away_ppg: awayStats?.points_per_game || 0,
-      cosine_similarity: cosineSimilarity,
-      pressing_mismatch: pressingMismatch,
-      match_date: fixture.match_date,
-      status: fixture.status,
-    };
+        // Calculate tactical metrics - Handle missing vectors
+        let cosineSimilarity = 0;
+        let pressingMismatch = 0;
 
-    const { error: upsertError } = await supabase.from("enhanced_matches").upsert(enhancedData, { onConflict: "fixture_id" });
-    if (upsertError) {
-      console.error(`Error upserting enhanced match data for fixture ${fixture.id}: ${upsertError.message}`);
-    } else {
-      console.log(`Processed enhanced match data (Tactics: ${homeVectors && awayVectors ? 'Yes' : 'No'}) for fixture ${fixture.id}`);
+        if (homeVectors && awayVectors) {
+            // Define which vector components to use for similarity
+            const vectorKeys = [
+              "pressing_intensity_normalized",
+              "possession_control_normalized",
+              "counter_attack_focus_normalized",
+              "attack_tempo_normalized",
+              "defensive_line_height_normalized",
+            ];
+            try {
+                const homeVec = vectorKeys.map(key => homeVectors[key]);
+                const awayVec = vectorKeys.map(key => awayVectors[key]);
+                cosineSimilarity = calculateCosineSimilarity(homeVec, awayVec);
+                pressingMismatch = Math.abs((homeVectors.pressing_intensity_normalized || 0) - (awayVectors.pressing_intensity_normalized || 0));
+            } catch (e) {
+                console.error(`Error calculating tactical metrics for fixture ${fixture.id}: ${e.message}. Using defaults.`);
+                cosineSimilarity = 0;
+                pressingMismatch = 0;
+            }
+        } else {
+            console.warn(`Missing tactical vectors for one or both teams in fixture ${fixture.id}. Using default tactical metrics (0).`);
+            // Default values are already set
+        }
+
+        // Combine data into enhanced_matches format
+        const enhancedData = {
+          fixture_id: fixture.id,
+          home_team_elo: homeStats?.elo_rating || 1500, // Use default if stats somehow missing after check
+          away_team_elo: awayStats?.elo_rating || 1500,
+          home_ppg: homeStats?.points_per_game || 0,
+          away_ppg: awayStats?.points_per_game || 0,
+          cosine_similarity: cosineSimilarity,
+          pressing_mismatch: pressingMismatch,
+          match_date: fixture.match_date,
+          status: fixture.status,
+        };
+
+        const { error: upsertError } = await supabase.from("enhanced_matches").upsert(enhancedData, { onConflict: "fixture_id" });
+        if (upsertError) {
+          console.error(`Error upserting enhanced match data for fixture ${fixture.id}: ${upsertError.message}`);
+        } else {
+          console.log(`Processed enhanced match data (Tactics: ${homeVectors && awayVectors ? 'Yes' : 'No'}) for fixture ${fixture.id}`);
+        }
+    } catch (loopError) {
+        console.error(`Caught error processing fixture ID ${fixture.id} in updateEnhancedMatches loop: ${loopError.message}`);
+        // Continue to the next fixture
     }
     await new Promise((resolve) => setTimeout(resolve, 50)); // Shorter delay ok
   }
@@ -514,102 +538,124 @@ async function makePredictions(league) {
   console.log(`Making predictions for upcoming matches in league: ${league.name}...`);
 
   // Fetch enhanced match data (including tactical metrics) for fixtures in this league that are 'Not Started' (NS)
+  // **FIX:** Need to fetch fixture IDs first, then query enhanced_matches
+  const { data: upcomingFixtureIdsData, error: upcomingFixtureIdsError } = await supabase
+    .from("fixtures")
+    .select("id")
+    .eq("league_id", league.id)
+    .eq("status", "NS"); // Filter for 'Not Started' matches
+
+  if (upcomingFixtureIdsError) {
+    console.error(`Error fetching upcoming fixture IDs for prediction in league ${league.id}: ${upcomingFixtureIdsError.message}`);
+    return;
+  }
+  const upcomingFixtureIds = upcomingFixtureIdsData.map(item => item.id);
+  if (upcomingFixtureIds.length === 0) {
+      console.log(`No upcoming matches found needing prediction for league ${league.name}.`);
+      return;
+  }
+
+  // Now fetch enhanced data for these specific upcoming fixtures
   const { data: upcomingMatches, error: fetchError } = await supabase
     .from("enhanced_matches")
-    .select("*, fixture_id!inner(id, api_id, league_id, home_team_id(name), away_team_id(name))") // Use inner join to filter by league
-    .eq("status", "NS") // Filter for 'Not Started' matches
-    .eq("fixture_id.league_id", league.id); // Filter by league ID
+    .select("*, fixture_id!inner(id, api_id, league_id, home_team_id(name), away_team_id(name))") // Use inner join to get fixture details
+    .in("fixture_id", upcomingFixtureIds); // Filter by the upcoming fixture IDs
 
   if (fetchError) {
-    console.error(`Error fetching upcoming matches for prediction in league ${league.id}: ${fetchError.message}`);
+    console.error(`Error fetching enhanced data for upcoming matches in league ${league.id}: ${fetchError.message}`);
     return;
   }
 
   if (!upcomingMatches || upcomingMatches.length === 0) {
-    console.log(`No upcoming matches found needing prediction for league ${league.name}.`);
+    console.log(`No enhanced data found for upcoming matches in league ${league.name}. Ensure enhanced_matches step ran successfully.`);
     return;
   }
 
-  console.log(`Found ${upcomingMatches.length} upcoming matches to predict for league ${league.name}.`);
+  console.log(`Found ${upcomingMatches.length} upcoming matches with enhanced data to predict for league ${league.name}.`);
 
   for (const match of upcomingMatches) {
-    // Enhanced prediction using Elo and tactical metrics
-    const homeElo = match.home_team_elo || 1500;
-    const awayElo = match.away_team_elo || 1500;
-    const eloDiff = homeElo - awayElo;
-    const cosineSimilarity = match.cosine_similarity || 0; // Default to 0 if null
-    const pressingMismatch = match.pressing_mismatch || 0; // Default to 0 if null
+    try { // Add try-catch around the loop body
+        // Enhanced prediction using Elo and tactical metrics
+        const homeElo = match.home_team_elo || 1500;
+        const awayElo = match.away_team_elo || 1500;
+        const eloDiff = homeElo - awayElo;
+        const cosineSimilarity = match.cosine_similarity || 0; // Default to 0 if null
+        const pressingMismatch = match.pressing_mismatch || 0; // Default to 0 if null
 
-    // Base probabilities
-    let homeWinProb = 0.33;
-    let drawProb = 0.34;
-    let awayWinProb = 0.33;
+        // Base probabilities
+        let homeWinProb = 0.33;
+        let drawProb = 0.34;
+        let awayWinProb = 0.33;
 
-    // 1. Adjust based on Elo difference
-    const eloProbShift = Math.min(Math.abs(eloDiff) / 400 * 0.3, 0.3); // Max 30% shift based on Elo
-    if (eloDiff > 50) { // Home team favored by Elo
-        homeWinProb += eloProbShift;
-        awayWinProb -= eloProbShift / 2;
-        drawProb -= eloProbShift / 2;
-    } else if (eloDiff < -50) { // Away team favored by Elo
-        awayWinProb += eloProbShift;
-        homeWinProb -= eloProbShift / 2;
-        drawProb -= eloProbShift / 2;
-    }
+        // 1. Adjust based on Elo difference
+        const eloProbShift = Math.min(Math.abs(eloDiff) / 400 * 0.3, 0.3); // Max 30% shift based on Elo
+        if (eloDiff > 50) { // Home team favored by Elo
+            homeWinProb += eloProbShift;
+            awayWinProb -= eloProbShift / 2;
+            drawProb -= eloProbShift / 2;
+        } else if (eloDiff < -50) { // Away team favored by Elo
+            awayWinProb += eloProbShift;
+            homeWinProb -= eloProbShift / 2;
+            drawProb -= eloProbShift / 2;
+        }
 
-    // 2. Adjust based on tactical similarity (cosine similarity)
-    // Higher similarity slightly increases draw probability
-    const similarityAdjustment = (cosineSimilarity - 0.5) * 0.05; // Small adjustment (max +/- 2.5%)
-    drawProb += similarityAdjustment;
-    homeWinProb -= similarityAdjustment / 2;
-    awayWinProb -= similarityAdjustment / 2;
+        // 2. Adjust based on tactical similarity (cosine similarity)
+        // Higher similarity slightly increases draw probability
+        const similarityAdjustment = (cosineSimilarity - 0.5) * 0.05; // Small adjustment (max +/- 2.5%)
+        drawProb += similarityAdjustment;
+        homeWinProb -= similarityAdjustment / 2;
+        awayWinProb -= similarityAdjustment / 2;
 
-    // 3. Adjust based on pressing mismatch (placeholder logic)
-    // Assuming higher pressing intensity is generally advantageous
-    // This requires knowing which team has higher pressing intensity from the original vectors, not just the mismatch value.
-    // For now, we'll skip this adjustment as it needs more context.
-    // const pressingAdjustment = pressingMismatch * 0.02; // Example: Small adjustment based on mismatch magnitude
-    // // Need logic here to determine which team benefits from the mismatch
+        // 3. Adjust based on pressing mismatch (placeholder logic)
+        // Assuming higher pressing intensity is generally advantageous
+        // This requires knowing which team has higher pressing intensity from the original vectors, not just the mismatch value.
+        // For now, we'll skip this adjustment as it needs more context.
+        // const pressingAdjustment = pressingMismatch * 0.02; // Example: Small adjustment based on mismatch magnitude
+        // // Need logic here to determine which team benefits from the mismatch
 
-    // Normalize probabilities
-    let totalProb = homeWinProb + drawProb + awayWinProb;
-    homeWinProb = Math.max(0.01, homeWinProb / totalProb); // Ensure non-negative and non-zero
-    drawProb = Math.max(0.01, drawProb / totalProb);
-    awayWinProb = Math.max(0.01, awayWinProb / totalProb);
-    // Re-normalize after ensuring non-negative
-    totalProb = homeWinProb + drawProb + awayWinProb;
-    if (totalProb > 0) {
-        homeWinProb /= totalProb;
-        drawProb /= totalProb;
-        awayWinProb /= totalProb;
-    }
+        // Normalize probabilities
+        let totalProb = homeWinProb + drawProb + awayWinProb;
+        homeWinProb = Math.max(0.01, homeWinProb / totalProb); // Ensure non-negative and non-zero
+        drawProb = Math.max(0.01, drawProb / totalProb);
+        awayWinProb = Math.max(0.01, awayWinProb / totalProb);
+        // Re-normalize after ensuring non-negative
+        totalProb = homeWinProb + drawProb + awayWinProb;
+        if (totalProb > 0) {
+            homeWinProb /= totalProb;
+            drawProb /= totalProb;
+            awayWinProb /= totalProb;
+        }
 
-    // Determine predicted outcome based on highest probability
-    let predictedOutcome = "Draw";
-    if (homeWinProb > awayWinProb && homeWinProb > drawProb) {
-        predictedOutcome = "Home Win";
-    } else if (awayWinProb > homeWinProb && awayWinProb > drawProb) {
-        predictedOutcome = "Away Win";
-    }
+        // Determine predicted outcome based on highest probability
+        let predictedOutcome = "Draw";
+        if (homeWinProb > awayWinProb && homeWinProb > drawProb) {
+            predictedOutcome = "Home Win";
+        } else if (awayWinProb > homeWinProb && awayWinProb > drawProb) {
+            predictedOutcome = "Away Win";
+        }
 
-    const predictionData = {
-      fixture_id: match.fixture_id.id,
-      predicted_outcome: predictedOutcome,
-      home_win_probability: homeWinProb,
-      draw_probability: drawProb,
-      away_win_probability: awayWinProb,
-      prediction_date: new Date().toISOString(),
-    };
+        const predictionData = {
+          fixture_id: match.fixture_id.id,
+          predicted_outcome: predictedOutcome,
+          home_win_probability: homeWinProb,
+          draw_probability: drawProb,
+          away_win_probability: awayWinProb,
+          prediction_date: new Date().toISOString(),
+        };
 
-    // Upsert prediction into the database
-    const { error: upsertError } = await supabase.from("predictions").upsert(predictionData, { onConflict: "fixture_id" }); // Update if prediction for this fixture already exists
+        // Upsert prediction into the database
+        const { error: upsertError } = await supabase.from("predictions").upsert(predictionData, { onConflict: "fixture_id" }); // Update if prediction for this fixture already exists
 
-    if (upsertError) {
-      console.error(`Error saving prediction for fixture ${match.fixture_id.id}: ${upsertError.message}`);
-    } else {
-      console.log(
-        `Prediction saved for fixture ${match.fixture_id.id}: ${match.fixture_id.home_team_id.name} vs ${match.fixture_id.away_team_id.name} -> ${predictedOutcome} (H: ${homeWinProb.toFixed(3)}, D: ${drawProb.toFixed(3)}, A: ${awayWinProb.toFixed(3)})`
-      );
+        if (upsertError) {
+          console.error(`Error saving prediction for fixture ${match.fixture_id.id}: ${upsertError.message}`);
+        } else {
+          console.log(
+            `Prediction saved for fixture ${match.fixture_id.id}: ${match.fixture_id.home_team_id.name} vs ${match.fixture_id.away_team_id.name} -> ${predictedOutcome} (H: ${homeWinProb.toFixed(3)}, D: ${drawProb.toFixed(3)}, A: ${awayWinProb.toFixed(3)})`
+          );
+        }
+    } catch (loopError) {
+        console.error(`Caught error processing prediction for fixture ID ${match.fixture_id?.id} in makePredictions loop: ${loopError.message}`);
+        // Continue to the next prediction
     }
     await new Promise((resolve) => setTimeout(resolve, 50)); // Shorter delay ok
   }
