@@ -1,4 +1,4 @@
-// Supabase Edge Function for scheduled data collection - Optimized + Tactical Data + Enhanced Predictions
+// Supabase Edge Function for scheduled data collection - Optimized + Tactical Data + Enhanced Predictions v2 (Error Handling)
 // This file should be deployed to your Supabase project as an Edge Function
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
@@ -371,7 +371,7 @@ async function fetchAndStoreTeamStats(league) {
   }
 }
 
-// --- Enhanced Matches (Now includes tactical data) ---
+// --- Enhanced Matches (Now includes tactical data with error handling) ---
 async function updateEnhancedMatches(league) {
   if (!league || typeof league !== "object" || !league.id) {
     console.error("Invalid league object passed to updateEnhancedMatches:", league);
@@ -442,38 +442,53 @@ async function updateEnhancedMatches(league) {
       .maybeSingle();
 
     if (homeStatsError || awayStatsError || homeVectorsError || awayVectorsError) {
-      console.error(
-        `Error fetching related stats/vectors for enhanced match ${fixture.id}: ${homeStatsError?.message || awayStatsError?.message || homeVectorsError?.message || awayVectorsError?.message}`
-      );
-      continue;
+      // Log specific errors but continue if possible
+      if (homeStatsError) console.error(`Error fetching home stats for fixture ${fixture.id}: ${homeStatsError.message}`);
+      if (awayStatsError) console.error(`Error fetching away stats for fixture ${fixture.id}: ${awayStatsError.message}`);
+      if (homeVectorsError) console.error(`Error fetching home vectors for fixture ${fixture.id}: ${homeVectorsError.message}`);
+      if (awayVectorsError) console.error(`Error fetching away vectors for fixture ${fixture.id}: ${awayVectorsError.message}`);
+      // Only continue if stats are missing, as they are crucial
+      if (!homeStats || !awayStats) {
+          console.log(`Missing crucial team stats for enhanced match ${fixture.id}. Skipping.`);
+          continue;
+      }
     }
 
-    if (!homeStats || !awayStats || !homeVectors || !awayVectors) {
-      console.log(`Missing team stats or tactical vectors for enhanced match ${fixture.id}. Skipping.`);
-      continue;
-    }
+    // Calculate tactical metrics - **FIX: Handle missing vectors**
+    let cosineSimilarity = 0;
+    let pressingMismatch = 0;
 
-    // Calculate tactical metrics
-    // Define which vector components to use for similarity
-    const vectorKeys = [
-      "pressing_intensity_normalized",
-      "possession_control_normalized",
-      "counter_attack_focus_normalized",
-      "attack_tempo_normalized",
-      "defensive_line_height_normalized",
-    ];
-    const homeVec = vectorKeys.map(key => homeVectors[key]);
-    const awayVec = vectorKeys.map(key => awayVectors[key]);
-    const cosineSimilarity = calculateCosineSimilarity(homeVec, awayVec);
-    const pressingMismatch = Math.abs((homeVectors.pressing_intensity_normalized || 0) - (awayVectors.pressing_intensity_normalized || 0));
+    if (homeVectors && awayVectors) {
+        // Define which vector components to use for similarity
+        const vectorKeys = [
+          "pressing_intensity_normalized",
+          "possession_control_normalized",
+          "counter_attack_focus_normalized",
+          "attack_tempo_normalized",
+          "defensive_line_height_normalized",
+        ];
+        try {
+            const homeVec = vectorKeys.map(key => homeVectors[key]);
+            const awayVec = vectorKeys.map(key => awayVectors[key]);
+            cosineSimilarity = calculateCosineSimilarity(homeVec, awayVec);
+            pressingMismatch = Math.abs((homeVectors.pressing_intensity_normalized || 0) - (awayVectors.pressing_intensity_normalized || 0));
+        } catch (e) {
+            console.error(`Error calculating tactical metrics for fixture ${fixture.id}: ${e.message}. Using defaults.`);
+            cosineSimilarity = 0;
+            pressingMismatch = 0;
+        }
+    } else {
+        console.warn(`Missing tactical vectors for one or both teams in fixture ${fixture.id}. Using default tactical metrics (0).`);
+        // Default values are already set
+    }
 
     // Combine data into enhanced_matches format
     const enhancedData = {
       fixture_id: fixture.id,
-      home_team_elo: homeStats.elo_rating,
-      away_team_elo: awayStats.elo_rating,
-      home_ppg: homeStats.points_per_game,
-      away_ppg: awayStats.points_per_game,
+      home_team_elo: homeStats?.elo_rating || 1500, // Use default if stats somehow missing after check
+      away_team_elo: awayStats?.elo_rating || 1500,
+      home_ppg: homeStats?.points_per_game || 0,
+      away_ppg: awayStats?.points_per_game || 0,
       cosine_similarity: cosineSimilarity,
       pressing_mismatch: pressingMismatch,
       match_date: fixture.match_date,
@@ -484,7 +499,7 @@ async function updateEnhancedMatches(league) {
     if (upsertError) {
       console.error(`Error upserting enhanced match data for fixture ${fixture.id}: ${upsertError.message}`);
     } else {
-      console.log(`Processed enhanced match data (with tactics) for fixture ${fixture.id}`);
+      console.log(`Processed enhanced match data (Tactics: ${homeVectors && awayVectors ? 'Yes' : 'No'}) for fixture ${fixture.id}`);
     }
     await new Promise((resolve) => setTimeout(resolve, 50)); // Shorter delay ok
   }
@@ -522,8 +537,8 @@ async function makePredictions(league) {
     const homeElo = match.home_team_elo || 1500;
     const awayElo = match.away_team_elo || 1500;
     const eloDiff = homeElo - awayElo;
-    const cosineSimilarity = match.cosine_similarity || 0;
-    const pressingMismatch = match.pressing_mismatch || 0;
+    const cosineSimilarity = match.cosine_similarity || 0; // Default to 0 if null
+    const pressingMismatch = match.pressing_mismatch || 0; // Default to 0 if null
 
     // Base probabilities
     let homeWinProb = 0.33;
@@ -654,6 +669,8 @@ serve(async (req) => {
     });
   } catch (error) {
     console.error(`Error during data collection process for league ${leagueApiId}:`, error);
+    // Log the specific error that caused the catch block
+    console.error("Caught error details:", error.message, error.stack);
     return new Response(JSON.stringify({ error: error.message }), {
       headers: { "Content-Type": "application/json" },
       status: 500,
