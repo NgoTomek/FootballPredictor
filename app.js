@@ -506,6 +506,9 @@ async function handleCustomPrediction(e) {
         // DEBUG: Log the extracted prediction object
         console.log("Extracted prediction object:", prediction);
         
+        // DEBUG: Log the raw probability values
+        console.log("Raw probabilities:", prediction.home_win_probability, prediction.draw_probability, prediction.away_win_probability);
+
         // Format probabilities
         const homeWinProb = Math.round(prediction.home_win_probability * 100);
         const drawProb = Math.round(prediction.draw_probability * 100);
@@ -515,10 +518,10 @@ async function handleCustomPrediction(e) {
         let resultText = "";
         let resultClass = "";
         
-        if (prediction.predicted_result === 1) {
+        if (prediction.predicted_outcome === 1) {
             resultText = "Home Win";
             resultClass = "text-primary";
-        } else if (prediction.predicted_result === 0) {
+        } else if (prediction.predicted_outcome === 0) {
             resultText = "Draw";
             resultClass = "text-secondary";
         } else {
