@@ -1,0 +1,977 @@
+[
+    {
+        "fixture_id": 1208360,
+        "date": "2025-05-01T18:30:00+00:00",
+        "league_name": "Premier League",
+        "league_id": 39,
+        "home_team_name": "Nottingham Forest",
+        "away_team_name": "Brentford",
+        "home_team_id_api": 65,
+        "away_team_id_api": 55,
+        "odds": {
+            "home_odd": 2.15,
+            "draw_odd": 3.5,
+            "away_odd": 3.25
+        }
+    },
+    {
+        "fixture_id": 1208371,
+        "date": "2025-05-02T19:00:00+00:00",
+        "league_name": "Premier League",
+        "league_id": 39,
+        "home_team_name": "Manchester City",
+        "away_team_name": "Wolves",
+        "home_team_id_api": 50,
+        "away_team_id_api": 39,
+        "odds": {
+            "home_odd": 1.33,
+            "draw_odd": 5.25,
+            "away_odd": 8.0
+        }
+    },
+    {
+        "fixture_id": 1208364,
+        "date": "2025-05-03T11:30:00+00:00",
+        "league_name": "Premier League",
+        "league_id": 39,
+        "home_team_name": "Aston Villa",
+        "away_team_name": "Fulham",
+        "home_team_id_api": 66,
+        "away_team_id_api": 36,
+        "odds": {
+            "home_odd": 1.73,
+            "draw_odd": 3.8,
+            "away_odd": 4.5
+        }
+    },
+    {
+        "fixture_id": 1208369,
+        "date": "2025-05-03T14:00:00+00:00",
+        "league_name": "Premier League",
+        "league_id": 39,
+        "home_team_name": "Everton",
+        "away_team_name": "Ipswich",
+        "home_team_id_api": 45,
+        "away_team_id_api": 57,
+        "odds": {
+            "home_odd": 1.57,
+            "draw_odd": 4.0,
+            "away_odd": 5.5
+        }
+    },
+    {
+        "fixture_id": 1208370,
+        "date": "2025-05-03T14:00:00+00:00",
+        "league_name": "Premier League",
+        "league_id": 39,
+        "home_team_name": "Leicester",
+        "away_team_name": "Southampton",
+        "home_team_id_api": 46,
+        "away_team_id_api": 41,
+        "odds": {
+            "home_odd": 2.25,
+            "draw_odd": 3.6,
+            "away_odd": 2.9
+        }
+    },
+    {
+        "fixture_id": 1208363,
+        "date": "2025-05-03T16:30:00+00:00",
+        "league_name": "Premier League",
+        "league_id": 39,
+        "home_team_name": "Arsenal",
+        "away_team_name": "Bournemouth",
+        "home_team_id_api": 42,
+        "away_team_id_api": 35,
+        "odds": {
+            "home_odd": 1.9,
+            "draw_odd": 3.7,
+            "away_odd": 3.7
+        }
+    },
+    {
+        "fixture_id": 1208372,
+        "date": "2025-05-04T13:00:00+00:00",
+        "league_name": "Premier League",
+        "league_id": 39,
+        "home_team_name": "West Ham",
+        "away_team_name": "Tottenham",
+        "home_team_id_api": 48,
+        "away_team_id_api": 47,
+        "odds": {
+            "home_odd": 2.25,
+            "draw_odd": 3.6,
+            "away_odd": 2.9
+        }
+    },
+    {
+        "fixture_id": 1208366,
+        "date": "2025-05-04T13:00:00+00:00",
+        "league_name": "Premier League",
+        "league_id": 39,
+        "home_team_name": "Brighton",
+        "away_team_name": "Newcastle",
+        "home_team_id_api": 51,
+        "away_team_id_api": 34,
+        "odds": {
+            "home_odd": 2.7,
+            "draw_odd": 3.6,
+            "away_odd": 2.38
+        }
+    },
+    {
+        "fixture_id": 1208365,
+        "date": "2025-05-04T13:00:00+00:00",
+        "league_name": "Premier League",
+        "league_id": 39,
+        "home_team_name": "Brentford",
+        "away_team_name": "Manchester United",
+        "home_team_id_api": 55,
+        "away_team_id_api": 33,
+        "odds": {
+            "home_odd": 1.67,
+            "draw_odd": 4.1,
+            "away_odd": 4.33
+        }
+    },
+    {
+        "fixture_id": 1208367,
+        "date": "2025-05-04T15:30:00+00:00",
+        "league_name": "Premier League",
+        "league_id": 39,
+        "home_team_name": "Chelsea",
+        "away_team_name": "Liverpool",
+        "home_team_id_api": 49,
+        "away_team_id_api": 40,
+        "odds": {
+            "home_odd": 2.15,
+            "draw_odd": 3.5,
+            "away_odd": 3.2
+        }
+    },
+    {
+        "fixture_id": 1208368,
+        "date": "2025-05-05T19:00:00+00:00",
+        "league_name": "Premier League",
+        "league_id": 39,
+        "home_team_name": "Crystal Palace",
+        "away_team_name": "Nottingham Forest",
+        "home_team_id_api": 52,
+        "away_team_id_api": 65,
+        "odds": {
+            "home_odd": 2.3,
+            "draw_odd": 3.3,
+            "away_odd": 3.0
+        }
+    },
+    {
+        "fixture_id": 1208797,
+        "date": "2025-05-02T19:00:00+00:00",
+        "league_name": "La Liga",
+        "league_id": 140,
+        "home_team_name": "Rayo Vallecano",
+        "away_team_name": "Getafe",
+        "home_team_id_api": 728,
+        "away_team_id_api": 546,
+        "odds": {
+            "home_odd": 2.35,
+            "draw_odd": 3.0,
+            "away_odd": 3.4
+        }
+    },
+    {
+        "fixture_id": 1208793,
+        "date": "2025-05-03T12:00:00+00:00",
+        "league_name": "La Liga",
+        "league_id": 140,
+        "home_team_name": "Alaves",
+        "away_team_name": "Atletico Madrid",
+        "home_team_id_api": 542,
+        "away_team_id_api": 530,
+        "odds": {
+            "home_odd": 3.6,
+            "draw_odd": 3.2,
+            "away_odd": 2.1
+        }
+    },
+    {
+        "fixture_id": 1208798,
+        "date": "2025-05-03T14:15:00+00:00",
+        "league_name": "La Liga",
+        "league_id": 140,
+        "home_team_name": "Villarreal",
+        "away_team_name": "Osasuna",
+        "home_team_id_api": 533,
+        "away_team_id_api": 727,
+        "odds": {
+            "home_odd": 1.55,
+            "draw_odd": 4.2,
+            "away_odd": 5.5
+        }
+    },
+    {
+        "fixture_id": 1208792,
+        "date": "2025-05-03T16:30:00+00:00",
+        "league_name": "La Liga",
+        "league_id": 140,
+        "home_team_name": "Las Palmas",
+        "away_team_name": "Valencia",
+        "home_team_id_api": 534,
+        "away_team_id_api": 532,
+        "odds": {
+            "home_odd": 2.55,
+            "draw_odd": 3.3,
+            "away_odd": 2.7
+        }
+    },
+    {
+        "fixture_id": 1208795,
+        "date": "2025-05-03T19:00:00+00:00",
+        "league_name": "La Liga",
+        "league_id": 140,
+        "home_team_name": "Valladolid",
+        "away_team_name": "Barcelona",
+        "home_team_id_api": 720,
+        "away_team_id_api": 529,
+        "odds": {
+            "home_odd": 15.0,
+            "draw_odd": 9.5,
+            "away_odd": 1.11
+        }
+    },
+    {
+        "fixture_id": 1208796,
+        "date": "2025-05-04T12:00:00+00:00",
+        "league_name": "La Liga",
+        "league_id": 140,
+        "home_team_name": "Real Madrid",
+        "away_team_name": "Celta Vigo",
+        "home_team_id_api": 541,
+        "away_team_id_api": 538,
+        "odds": {
+            "home_odd": 1.36,
+            "draw_odd": 5.75,
+            "away_odd": 6.5
+        }
+    },
+    {
+        "fixture_id": 1208799,
+        "date": "2025-05-04T14:15:00+00:00",
+        "league_name": "La Liga",
+        "league_id": 140,
+        "home_team_name": "Sevilla",
+        "away_team_name": "Leganes",
+        "home_team_id_api": 536,
+        "away_team_id_api": 537,
+        "odds": {
+            "home_odd": 1.8,
+            "draw_odd": 3.4,
+            "away_odd": 4.75
+        }
+    },
+    {
+        "fixture_id": 1212943,
+        "date": "2025-05-04T16:30:00+00:00",
+        "league_name": "La Liga",
+        "league_id": 140,
+        "home_team_name": "Espanyol",
+        "away_team_name": "Real Betis",
+        "home_team_id_api": 540,
+        "away_team_id_api": 543,
+        "odds": {
+            "home_odd": 3.1,
+            "draw_odd": 3.2,
+            "away_odd": 2.38
+        }
+    },
+    {
+        "fixture_id": 1208794,
+        "date": "2025-05-04T19:00:00+00:00",
+        "league_name": "La Liga",
+        "league_id": 140,
+        "home_team_name": "Real Sociedad",
+        "away_team_name": "Athletic Club",
+        "home_team_id_api": 548,
+        "away_team_id_api": 531,
+        "odds": {
+            "home_odd": 2.4,
+            "draw_odd": 3.0,
+            "away_odd": 3.2
+        }
+    },
+    {
+        "fixture_id": 1208791,
+        "date": "2025-05-05T19:00:00+00:00",
+        "league_name": "La Liga",
+        "league_id": 140,
+        "home_team_name": "Girona",
+        "away_team_name": "Mallorca",
+        "home_team_id_api": 547,
+        "away_team_id_api": 798,
+        "odds": {
+            "home_odd": 2.05,
+            "draw_odd": 3.1,
+            "away_odd": 4.0
+        }
+    },
+    {
+        "fixture_id": 1208806,
+        "date": "2025-05-09T19:00:00+00:00",
+        "league_name": "La Liga",
+        "league_id": 140,
+        "home_team_name": "Las Palmas",
+        "away_team_name": "Rayo Vallecano",
+        "home_team_id_api": 534,
+        "away_team_id_api": 728,
+        "odds": {
+            "home_odd": 2.5,
+            "draw_odd": 3.2,
+            "away_odd": 2.88
+        }
+    },
+    {
+        "fixture_id": 1208807,
+        "date": "2025-05-10T12:00:00+00:00",
+        "league_name": "La Liga",
+        "league_id": 140,
+        "home_team_name": "Valencia",
+        "away_team_name": "Getafe",
+        "home_team_id_api": 532,
+        "away_team_id_api": 546,
+        "odds": {
+            "home_odd": 2.1,
+            "draw_odd": 2.9,
+            "away_odd": 4.0
+        }
+    },
+    {
+        "fixture_id": 1208803,
+        "date": "2025-05-10T14:15:00+00:00",
+        "league_name": "La Liga",
+        "league_id": 140,
+        "home_team_name": "Celta Vigo",
+        "away_team_name": "Sevilla",
+        "home_team_id_api": 538,
+        "away_team_id_api": 536,
+        "odds": {
+            "home_odd": 1.95,
+            "draw_odd": 3.5,
+            "away_odd": 3.9
+        }
+    },
+    {
+        "fixture_id": 1208804,
+        "date": "2025-05-10T16:30:00+00:00",
+        "league_name": "La Liga",
+        "league_id": 140,
+        "home_team_name": "Girona",
+        "away_team_name": "Villarreal",
+        "home_team_id_api": 547,
+        "away_team_id_api": 533,
+        "odds": {
+            "home_odd": 2.62,
+            "draw_odd": 3.5,
+            "away_odd": 2.45
+        }
+    },
+    {
+        "fixture_id": 1208805,
+        "date": "2025-05-10T16:30:00+00:00",
+        "league_name": "La Liga",
+        "league_id": 140,
+        "home_team_name": "Mallorca",
+        "away_team_name": "Valladolid",
+        "home_team_id_api": 798,
+        "away_team_id_api": 720,
+        "odds": {
+            "home_odd": 1.42,
+            "draw_odd": 4.0,
+            "away_odd": 8.0
+        }
+    },
+    {
+        "fixture_id": 1208800,
+        "date": "2025-05-10T19:00:00+00:00",
+        "league_name": "La Liga",
+        "league_id": 140,
+        "home_team_name": "Atletico Madrid",
+        "away_team_name": "Real Sociedad",
+        "home_team_id_api": 530,
+        "away_team_id_api": 548,
+        "odds": {
+            "home_odd": 1.53,
+            "draw_odd": 4.33,
+            "away_odd": 5.25
+        }
+    },
+    {
+        "fixture_id": 1212944,
+        "date": "2025-05-11T12:00:00+00:00",
+        "league_name": "La Liga",
+        "league_id": 140,
+        "home_team_name": "Leganes",
+        "away_team_name": "Espanyol",
+        "home_team_id_api": 537,
+        "away_team_id_api": 540,
+        "odds": {
+            "home_odd": 2.35,
+            "draw_odd": 3.0,
+            "away_odd": 3.3
+        }
+    },
+    {
+        "fixture_id": 1208801,
+        "date": "2025-05-11T14:15:00+00:00",
+        "league_name": "La Liga",
+        "league_id": 140,
+        "home_team_name": "Barcelona",
+        "away_team_name": "Real Madrid",
+        "home_team_id_api": 529,
+        "away_team_id_api": 541,
+        "odds": {
+            "home_odd": 1.8,
+            "draw_odd": 3.9,
+            "away_odd": 3.8
+        }
+    },
+    {
+        "fixture_id": 1208808,
+        "date": "2025-05-11T16:30:00+00:00",
+        "league_name": "La Liga",
+        "league_id": 140,
+        "home_team_name": "Athletic Club",
+        "away_team_name": "Alaves",
+        "home_team_id_api": 531,
+        "away_team_id_api": 542,
+        "odds": {
+            "home_odd": 1.75,
+            "draw_odd": 3.2,
+            "away_odd": 5.25
+        }
+    },
+    {
+        "fixture_id": 1208802,
+        "date": "2025-05-11T19:00:00+00:00",
+        "league_name": "La Liga",
+        "league_id": 140,
+        "home_team_name": "Real Betis",
+        "away_team_name": "Osasuna",
+        "home_team_id_api": 543,
+        "away_team_id_api": 727,
+        "odds": {
+            "home_odd": 1.65,
+            "draw_odd": 3.6,
+            "away_odd": 5.5
+        }
+    },
+    {
+        "fixture_id": 1223944,
+        "date": "2025-05-02T18:45:00+00:00",
+        "league_name": "Serie A",
+        "league_id": 135,
+        "home_team_name": "Torino",
+        "away_team_name": "Venezia",
+        "home_team_id_api": 503,
+        "away_team_id_api": 517,
+        "odds": {
+            "home_odd": 2.2,
+            "draw_odd": 3.0,
+            "away_odd": 3.75
+        }
+    },
+    {
+        "fixture_id": 1223936,
+        "date": "2025-05-03T13:00:00+00:00",
+        "league_name": "Serie A",
+        "league_id": 135,
+        "home_team_name": "Cagliari",
+        "away_team_name": "Udinese",
+        "home_team_id_api": 490,
+        "away_team_id_api": 494,
+        "odds": {
+            "home_odd": 2.15,
+            "draw_odd": 3.1,
+            "away_odd": 3.7
+        }
+    },
+    {
+        "fixture_id": 1223942,
+        "date": "2025-05-03T13:00:00+00:00",
+        "league_name": "Serie A",
+        "league_id": 135,
+        "home_team_name": "Parma",
+        "away_team_name": "Como",
+        "home_team_id_api": 523,
+        "away_team_id_api": 895,
+        "odds": {
+            "home_odd": 3.0,
+            "draw_odd": 3.3,
+            "away_odd": 2.38
+        }
+    },
+    {
+        "fixture_id": 1223940,
+        "date": "2025-05-03T16:00:00+00:00",
+        "league_name": "Serie A",
+        "league_id": 135,
+        "home_team_name": "Lecce",
+        "away_team_name": "Napoli",
+        "home_team_id_api": 867,
+        "away_team_id_api": 492,
+        "odds": {
+            "home_odd": 6.5,
+            "draw_odd": 3.9,
+            "away_odd": 1.53
+        }
+    },
+    {
+        "fixture_id": 1223939,
+        "date": "2025-05-03T18:45:00+00:00",
+        "league_name": "Serie A",
+        "league_id": 135,
+        "home_team_name": "Inter",
+        "away_team_name": "Verona",
+        "home_team_id_api": 505,
+        "away_team_id_api": 504,
+        "odds": {
+            "home_odd": 1.33,
+            "draw_odd": 4.75,
+            "away_odd": 9.5
+        }
+    },
+    {
+        "fixture_id": 1223937,
+        "date": "2025-05-04T10:30:00+00:00",
+        "league_name": "Serie A",
+        "league_id": 135,
+        "home_team_name": "Empoli",
+        "away_team_name": "Lazio",
+        "home_team_id_api": 511,
+        "away_team_id_api": 487,
+        "odds": {
+            "home_odd": 4.2,
+            "draw_odd": 3.5,
+            "away_odd": 1.85
+        }
+    },
+    {
+        "fixture_id": 1223941,
+        "date": "2025-05-04T13:00:00+00:00",
+        "league_name": "Serie A",
+        "league_id": 135,
+        "home_team_name": "Monza",
+        "away_team_name": "Atalanta",
+        "home_team_id_api": 1579,
+        "away_team_id_api": 499,
+        "odds": {
+            "home_odd": 12.0,
+            "draw_odd": 5.75,
+            "away_odd": 1.25
+        }
+    },
+    {
+        "fixture_id": 1223943,
+        "date": "2025-05-04T16:00:00+00:00",
+        "league_name": "Serie A",
+        "league_id": 135,
+        "home_team_name": "AS Roma",
+        "away_team_name": "Fiorentina",
+        "home_team_id_api": 497,
+        "away_team_id_api": 502,
+        "odds": {
+            "home_odd": 1.67,
+            "draw_odd": 3.7,
+            "away_odd": 5.25
+        }
+    },
+    {
+        "fixture_id": 1223935,
+        "date": "2025-05-04T18:45:00+00:00",
+        "league_name": "Serie A",
+        "league_id": 135,
+        "home_team_name": "Bologna",
+        "away_team_name": "Juventus",
+        "home_team_id_api": 500,
+        "away_team_id_api": 496,
+        "odds": {
+            "home_odd": 2.55,
+            "draw_odd": 3.0,
+            "away_odd": 3.0
+        }
+    },
+    {
+        "fixture_id": 1223938,
+        "date": "2025-05-05T18:45:00+00:00",
+        "league_name": "Serie A",
+        "league_id": 135,
+        "home_team_name": "Genoa",
+        "away_team_name": "AC Milan",
+        "home_team_id_api": 495,
+        "away_team_id_api": 489,
+        "odds": {
+            "home_odd": 4.0,
+            "draw_odd": 3.5,
+            "away_odd": 1.9
+        }
+    },
+    {
+        "fixture_id": 1224256,
+        "date": "2025-05-02T18:30:00+00:00",
+        "league_name": "Bundesliga",
+        "league_id": 78,
+        "home_team_name": "1. FC Heidenheim",
+        "away_team_name": "VfL Bochum",
+        "home_team_id_api": 180,
+        "away_team_id_api": 176,
+        "odds": {
+            "home_odd": 2.3,
+            "draw_odd": 3.4,
+            "away_odd": 3.0
+        }
+    },
+    {
+        "fixture_id": 1224260,
+        "date": "2025-05-03T13:30:00+00:00",
+        "league_name": "Bundesliga",
+        "league_id": 78,
+        "home_team_name": "Borussia M\u00f6nchengladbach",
+        "away_team_name": "1899 Hoffenheim",
+        "home_team_id_api": 163,
+        "away_team_id_api": 167,
+        "odds": {
+            "home_odd": 1.95,
+            "draw_odd": 3.9,
+            "away_odd": 3.3
+        }
+    },
+    {
+        "fixture_id": 1224254,
+        "date": "2025-05-03T13:30:00+00:00",
+        "league_name": "Bundesliga",
+        "league_id": 78,
+        "home_team_name": "RB Leipzig",
+        "away_team_name": "Bayern M\u00fcnchen",
+        "home_team_id_api": 173,
+        "away_team_id_api": 157,
+        "odds": {
+            "home_odd": 4.5,
+            "draw_odd": 4.33,
+            "away_odd": 1.65
+        }
+    },
+    {
+        "fixture_id": 1224261,
+        "date": "2025-05-03T13:30:00+00:00",
+        "league_name": "Bundesliga",
+        "league_id": 78,
+        "home_team_name": "Union Berlin",
+        "away_team_name": "Werder Bremen",
+        "home_team_id_api": 182,
+        "away_team_id_api": 162,
+        "odds": {
+            "home_odd": 2.62,
+            "draw_odd": 3.5,
+            "away_odd": 2.5
+        }
+    },
+    {
+        "fixture_id": 1224262,
+        "date": "2025-05-03T13:30:00+00:00",
+        "league_name": "Bundesliga",
+        "league_id": 78,
+        "home_team_name": "FC St. Pauli",
+        "away_team_name": "VfB Stuttgart",
+        "home_team_id_api": 186,
+        "away_team_id_api": 172,
+        "odds": {
+            "home_odd": 2.7,
+            "draw_odd": 3.4,
+            "away_odd": 2.5
+        }
+    },
+    {
+        "fixture_id": 1224255,
+        "date": "2025-05-03T16:30:00+00:00",
+        "league_name": "Bundesliga",
+        "league_id": 78,
+        "home_team_name": "Borussia Dortmund",
+        "away_team_name": "VfL Wolfsburg",
+        "home_team_id_api": 165,
+        "away_team_id_api": 161,
+        "odds": {
+            "home_odd": 1.33,
+            "draw_odd": 5.75,
+            "away_odd": 7.5
+        }
+    },
+    {
+        "fixture_id": 1224258,
+        "date": "2025-05-04T13:30:00+00:00",
+        "league_name": "Bundesliga",
+        "league_id": 78,
+        "home_team_name": "FC Augsburg",
+        "away_team_name": "Holstein Kiel",
+        "home_team_id_api": 170,
+        "away_team_id_api": 191,
+        "odds": {
+            "home_odd": 1.83,
+            "draw_odd": 3.9,
+            "away_odd": 4.0
+        }
+    },
+    {
+        "fixture_id": 1224257,
+        "date": "2025-05-04T15:30:00+00:00",
+        "league_name": "Bundesliga",
+        "league_id": 78,
+        "home_team_name": "SC Freiburg",
+        "away_team_name": "Bayer Leverkusen",
+        "home_team_id_api": 160,
+        "away_team_id_api": 168,
+        "odds": {
+            "home_odd": 3.25,
+            "draw_odd": 3.5,
+            "away_odd": 2.15
+        }
+    },
+    {
+        "fixture_id": 1224259,
+        "date": "2025-05-04T17:30:00+00:00",
+        "league_name": "Bundesliga",
+        "league_id": 78,
+        "home_team_name": "FSV Mainz 05",
+        "away_team_name": "Eintracht Frankfurt",
+        "home_team_id_api": 164,
+        "away_team_id_api": 169,
+        "odds": {
+            "home_odd": 2.35,
+            "draw_odd": 3.3,
+            "away_odd": 3.0
+        }
+    },
+    {
+        "fixture_id": 1214028,
+        "date": "2025-05-02T18:45:00+00:00",
+        "league_name": "Ligue 1",
+        "league_id": 61,
+        "home_team_name": "Nice",
+        "away_team_name": "Reims",
+        "home_team_id_api": 84,
+        "away_team_id_api": 93,
+        "odds": {
+            "home_odd": 1.42,
+            "draw_odd": 4.5,
+            "away_odd": 7.0
+        }
+    },
+    {
+        "fixture_id": 1214033,
+        "date": "2025-05-03T15:00:00+00:00",
+        "league_name": "Ligue 1",
+        "league_id": 61,
+        "home_team_name": "Strasbourg",
+        "away_team_name": "Paris Saint Germain",
+        "home_team_id_api": 95,
+        "away_team_id_api": 85,
+        "odds": {
+            "home_odd": 2.62,
+            "draw_odd": 3.7,
+            "away_odd": 2.4
+        }
+    },
+    {
+        "fixture_id": 1214032,
+        "date": "2025-05-03T17:00:00+00:00",
+        "league_name": "Ligue 1",
+        "league_id": 61,
+        "home_team_name": "Toulouse",
+        "away_team_name": "Rennes",
+        "home_team_id_api": 96,
+        "away_team_id_api": 94,
+        "odds": {
+            "home_odd": 2.1,
+            "draw_odd": 3.4,
+            "away_odd": 3.4
+        }
+    },
+    {
+        "fixture_id": 1214030,
+        "date": "2025-05-03T19:05:00+00:00",
+        "league_name": "Ligue 1",
+        "league_id": 61,
+        "home_team_name": "Saint Etienne",
+        "away_team_name": "Monaco",
+        "home_team_id_api": 1063,
+        "away_team_id_api": 91,
+        "odds": {
+            "home_odd": 5.75,
+            "draw_odd": 5.0,
+            "away_odd": 1.44
+        }
+    },
+    {
+        "fixture_id": 1214031,
+        "date": "2025-05-04T13:00:00+00:00",
+        "league_name": "Ligue 1",
+        "league_id": 61,
+        "home_team_name": "Nantes",
+        "away_team_name": "Angers",
+        "home_team_id_api": 83,
+        "away_team_id_api": 77,
+        "odds": {
+            "home_odd": 1.91,
+            "draw_odd": 3.25,
+            "away_odd": 4.33
+        }
+    },
+    {
+        "fixture_id": 1214026,
+        "date": "2025-05-04T15:15:00+00:00",
+        "league_name": "Ligue 1",
+        "league_id": 61,
+        "home_team_name": "Lyon",
+        "away_team_name": "Lens",
+        "home_team_id_api": 80,
+        "away_team_id_api": 116,
+        "odds": {
+            "home_odd": 1.7,
+            "draw_odd": 4.0,
+            "away_odd": 4.33
+        }
+    },
+    {
+        "fixture_id": 1214029,
+        "date": "2025-05-04T15:15:00+00:00",
+        "league_name": "Ligue 1",
+        "league_id": 61,
+        "home_team_name": "Stade Brestois 29",
+        "away_team_name": "Montpellier",
+        "home_team_id_api": 106,
+        "away_team_id_api": 82,
+        "odds": {
+            "home_odd": 1.38,
+            "draw_odd": 5.0,
+            "away_odd": 7.0
+        }
+    },
+    {
+        "fixture_id": 1214034,
+        "date": "2025-05-04T15:15:00+00:00",
+        "league_name": "Ligue 1",
+        "league_id": 61,
+        "home_team_name": "Auxerre",
+        "away_team_name": "Le Havre",
+        "home_team_id_api": 108,
+        "away_team_id_api": 111,
+        "odds": {
+            "home_odd": 2.05,
+            "draw_odd": 3.4,
+            "away_odd": 3.5
+        }
+    },
+    {
+        "fixture_id": 1214027,
+        "date": "2025-05-04T18:45:00+00:00",
+        "league_name": "Ligue 1",
+        "league_id": 61,
+        "home_team_name": "Lille",
+        "away_team_name": "Marseille",
+        "home_team_id_api": 79,
+        "away_team_id_api": 81,
+        "odds": {
+            "home_odd": 2.38,
+            "draw_odd": 3.2,
+            "away_odd": 3.0
+        }
+    },
+    {
+        "fixture_id": 1371732,
+        "date": "2025-04-30T19:00:00+00:00",
+        "league_name": "Champions League",
+        "league_id": 2,
+        "home_team_name": "Barcelona",
+        "away_team_name": "Inter",
+        "home_team_id_api": 529,
+        "away_team_id_api": 505,
+        "odds": {
+            "home_odd": 1.62,
+            "draw_odd": 4.2,
+            "away_odd": 5.0
+        }
+    },
+    {
+        "fixture_id": 1371731,
+        "date": "2025-05-07T19:00:00+00:00",
+        "league_name": "Champions League",
+        "league_id": 2,
+        "home_team_name": "Paris Saint Germain",
+        "away_team_name": "Arsenal",
+        "home_team_id_api": 85,
+        "away_team_id_api": 42,
+        "odds": {
+            "home_odd": 2.05,
+            "draw_odd": 3.5,
+            "away_odd": 3.6
+        }
+    },
+    {
+        "fixture_id": 1371990,
+        "date": "2025-05-01T19:00:00+00:00",
+        "league_name": "Europa League",
+        "league_id": 3,
+        "home_team_name": "Tottenham",
+        "away_team_name": "Bodo/Glimt",
+        "home_team_id_api": 47,
+        "away_team_id_api": 327,
+        "odds": {
+            "home_odd": 1.3,
+            "draw_odd": 5.75,
+            "away_odd": 8.5
+        }
+    },
+    {
+        "fixture_id": 1371992,
+        "date": "2025-05-01T19:00:00+00:00",
+        "league_name": "Europa League",
+        "league_id": 3,
+        "home_team_name": "Athletic Club",
+        "away_team_name": "Manchester United",
+        "home_team_id_api": 531,
+        "away_team_id_api": 33,
+        "odds": {
+            "home_odd": 2.0,
+            "draw_odd": 3.4,
+            "away_odd": 3.9
+        }
+    },
+    {
+        "fixture_id": 1371998,
+        "date": "2025-05-01T19:00:00+00:00",
+        "league_name": "Europa Conference League",
+        "league_id": 848,
+        "home_team_name": "Djurgardens IF",
+        "away_team_name": "Chelsea",
+        "home_team_id_api": 364,
+        "away_team_id_api": 49,
+        "odds": {
+            "home_odd": 10.0,
+            "draw_odd": 5.0,
+            "away_odd": 1.33
+        }
+    },
+    {
+        "fixture_id": 1371996,
+        "date": "2025-05-01T19:00:00+00:00",
+        "league_name": "Europa Conference League",
+        "league_id": 848,
+        "home_team_name": "Real Betis",
+        "away_team_name": "Fiorentina",
+        "home_team_id_api": 543,
+        "away_team_id_api": 502,
+        "odds": {
+            "home_odd": 1.73,
+            "draw_odd": 3.8,
+            "away_odd": 4.5
+        }
+    }
+]

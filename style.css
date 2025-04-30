@@ -1,0 +1,60 @@
+
+
+/* Style for Value Bet Indicator */
+.value-bet-indicator {
+    font-size: 0.7em;
+    vertical-align: super;
+    margin-left: 2px;
+    padding: 0.1em 0.3em;
+}
+
+/* Custom progress bar colors */
+.progress-bar-home {
+    background-color: #0d6efd; /* Bootstrap primary blue */
+}
+.progress-bar-draw {
+    background-color: #6c757d; /* Bootstrap secondary gray */
+}
+.progress-bar-away {
+    background-color: #dc3545; /* Bootstrap danger red */
+}
+
+/* Ensure logos aren't too big */
+.team-logo {
+    max-height: 40px;
+    max-width: 40px;
+    object-fit: contain;
+}
+
+/* VS Badge styling */
+.vs-badge {
+    display: inline-block;
+    padding: 0.3em 0.6em;
+    font-size: 0.9em;
+    font-weight: bold;
+    color: #6c757d; /* Secondary color */
+    background-color: #f8f9fa; /* Light background */
+    border: 1px solid #dee2e6; /* Light border */
+    border-radius: 50%;
+}
+
+/* Loading spinner centering */
+.loading {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 150px; /* Ensure spinner is visible */
+    flex-direction: column; /* Stack spinner and text */
+}
+
+/* Prediction card specific styles */
+.prediction-card .progress {
+    height: 25px; /* Make custom prediction bar taller */
+}
+.prediction-card .progress-bar {
+    font-size: 0.9em; /* Ensure text fits */
+    color: white;
+    font-weight: bold;
+    text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+}
+
