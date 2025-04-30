@@ -182,13 +182,26 @@ async function loadOddsData() {
         if (!response.ok) {
             throw new Error(`HTTP error! status: ${response.status}`);
         }
-        allOddsData = await response.json();
-        console.log(`Loaded ${allOddsData.length} fixtures with odds.`);
+        const rawOddsData = await response.json();
+        console.log(`Loaded ${rawOddsData.length} raw fixtures with odds.`);
+
+        // Create a map using a composite key: homeName_awayName_YYYY-MM-DD
+        allOddsData = new Map();
+        rawOddsData.forEach(o => {
+            try {
+                const datePart = new Date(o.date).toISOString().split('T')[0]; // Get YYYY-MM-DD
+                const key = `${o.home_team_name}_${o.away_team_name}_${datePart}`;
+                allOddsData.set(key, o.odds);
+            } catch (e) {
+                console.error(`Error processing odds entry: ${JSON.stringify(o)}`, e);
+            }
+        });
+        console.log(`Created odds map with ${allOddsData.size} entries. First key example:`, allOddsData.size > 0 ? allOddsData.keys().next().value : 'N/A'); // DEBUG
+
     } catch (error) {
-        console.error('Error loading odds data:', error);
-        // Handle error appropriately, maybe show a message to the user
+        console.error('Error loading or processing odds data:', error);
         showError('Could not load betting odds data. Value bet analysis will be unavailable.');
-        allOddsData = []; // Ensure it's an empty array on error
+        allOddsData = new Map(); // Ensure it's an empty map on error
     }
 }
 
@@ -234,10 +247,8 @@ async function loadUpcomingMatches() {
             return;
         }
 
-        // Create a map of odds by fixture_id for easy lookup
-        const oddsMap = new Map();
-        allOddsData.forEach(o => oddsMap.set(o.fixture_id, o.odds));
-        console.log("Odds Map:", oddsMap);
+            // Odds are now stored in allOddsData map with composite key (home_away_date)
+            console.log("Using allOddsData map with composite keys. Size:", allOddsData.size); // Updated log
 
         let fixturesHtml = '<div class="row">';
         
@@ -261,8 +272,20 @@ async function loadUpcomingMatches() {
             let predictionHtml = '';
             let oddsHtml = '';
             
-            // Get odds from the map
-            const odds = oddsMap.get(fixture.id);
+            // Construct the key to find odds in the allOddsData map (homeName_awayName_YYYY-MM-DD)
+            let odds = null;
+            if (homeTeam && awayTeam && homeTeam.name && awayTeam.name) {
+                try {
+                    const datePart = matchDate.toISOString().split("T")[0]; // Get YYYY-MM-DD
+                    const key = `${homeTeam.name}_${awayTeam.name}_${datePart}`;
+                    odds = allOddsData.get(key);
+                    console.log(`DEBUG: Looking for odds with key: ${key}. Found:`, odds ? JSON.stringify(odds) : 'Not Found'); // Updated DEBUG
+                } catch (e) {
+                    console.error(`Error constructing key or getting odds for fixture ${fixture.id} (${homeTeam.name} vs ${awayTeam.name}):`, e);
+                }
+            } else {
+                console.log(`DEBUG: Missing team names for fixture ${fixture.id}, cannot look up odds.`);
+            }
             
             // Process prediction result for this fixture
             const predictionResult = predictionResults[index];
